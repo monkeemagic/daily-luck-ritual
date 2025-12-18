@@ -205,6 +205,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
   late final Animation<double> tidelineGate;
   bool _reduceMotion = false;
   double _tidelineTime = 0.0; // continuous time accumulator (prevents loop snaps)
+  double _tidelineWaveTime = 0.0; // wave phase time (continuous; avoids phase snapping on value changes)
   double _lastTidelinePhase = 0.0;
 
   // ========================================
@@ -324,6 +325,17 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
       var delta = v - _lastTidelinePhase;
       if (delta < 0) delta += 1.0; // handle repeat wrap
       _tidelineTime += delta;
+
+      // Keep wave phase continuous even as "settled" changes.
+      // IMPORTANT: Do NOT scale phase as `time * speed` in the painter, since changing `speed`
+      // changes the absolute phase and reads as a “shove”. Instead, integrate speed into time.
+      final double settledNow =
+          primaryReadingRevealed ? _frontLoadedSettling(interactionProgress) : 0.0;
+      final bool canMove =
+          (primaryReadingRevealed || isSampling) && !_reduceMotion;
+      final double speed = canMove ? (lerpDouble(1.0, 0.08, settledNow) ?? 1.0) : 0.0;
+      _tidelineWaveTime += delta * speed;
+
       _lastTidelinePhase = v;
     });
     tidelineGateController = AnimationController(
@@ -426,6 +438,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
       if (!tidelineController.isAnimating) {
         // Start from a stable phase/time to avoid any visible “jump” in shape.
         _tidelineTime = 0.0;
+        _tidelineWaveTime = 0.0;
         _lastTidelinePhase = 0.0;
         // Animate to 0.0 before repeating, if not already there.
         if ((tidelineController.value - 0.0).abs() > 1e-4) {
@@ -451,6 +464,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
         tidelineGateController.animateTo(0.0, duration: const Duration(milliseconds: 360), curve: Curves.easeOut);
       }
       _tidelineTime = 0.0;
+      _tidelineWaveTime = 0.0;
       _lastTidelinePhase = 0.0;
     }
   }
@@ -899,7 +913,6 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     if (isSampling || observationCredits < nextObservationCost) return;
 
     final bool isPrimaryReading = !primaryReadingTakenToday;
-    final double p = interactionProgress;
 
     // Remove pre-sampling haze hold logic (variance phasing now via build).
 
@@ -925,17 +938,6 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
 
     _samplingMotionCycles =
         Random().nextDouble() * 3 + (isPrimaryReading ? 5 : 4);
-
-    final Curve motionCurve;
-    if (isPrimaryReading) {
-      motionCurve = Curves.decelerate;
-    } else if (p == 0.0) {
-      motionCurve = Curves.easeInOutCubic;
-    } else if (p < 0.5) {
-      motionCurve = Curves.easeOutQuart;
-    } else {
-      motionCurve = Curves.easeOutCubic;
-    }
 
     await Future.delayed(Duration(milliseconds: samplingDurationMs));
 
@@ -1259,7 +1261,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                         // when observation/settling state changes.
                         return TweenAnimationBuilder<double>(
                       // Slower, softer convergence so “new settled value” arrives gently.
-                      duration: const Duration(milliseconds: 2200),
+                      duration: const Duration(milliseconds: 3000),
                       curve: Curves.easeInOut,
                       // IMPORTANT: do not reset `begin` to 0 on rebuild; that creates a visible “jump”
                       // when settling progresses. With `begin` omitted, Flutter animates from the
@@ -1269,7 +1271,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                             return CustomPaint(
                               painter: _TidelinePainter(
                                 palette: palette,
-                                time: _tidelineTime,
+                                time: _tidelineWaveTime,
                                 enabled: (primaryReadingRevealed || isSampling) && !_reduceMotion,
                                 gate: tidelineGate.value,
                                 settled: settledVisual,
@@ -1586,15 +1588,13 @@ class _TidelinePainter extends CustomPainter {
     final double ampRaw = canMove
         ? lerpDouble(ampBase.toDouble(), (ampBase * 0.04).toDouble(), pow(s.toDouble(), 1.35).toDouble())! // decay slower, but finish soft
         : 0.0;
-    final double speedRaw = canMove ? lerpDouble(1.0, 0.08, s)! : 0.0;
     // Gate ramps motion in gently at anchor completion (no visible “start”).
     final double g = gate.clamp(0.0, 1.0);
     final double gateEase = pow(g, 2.6).toDouble(); // stays near 0 longer (no “pop”)
     final double amp = ampRaw * gateEase;
-    final double speed = speedRaw;
 
     // Use a multi-frequency blend to avoid a “single looping wave” feel.
-    final double t = (time * 2 * pi) * speed;
+    final double t = (time * 2 * pi);
     final double y0 = size.height * 0.35;
 
     final path = Path()..moveTo(0, size.height);
