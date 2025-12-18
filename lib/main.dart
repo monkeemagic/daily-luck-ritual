@@ -38,6 +38,144 @@ class DailyRitualApp extends StatelessWidget {
       ),
       home: const AtmosphereScreen(),
     );
+    void openAudioSheet() {
+      if (_soundMasterEnabled && _sfxEnabled) {
+        unawaited(SoundManager.instance.playTap());
+      }
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: const Color(0xFFFAF8F0),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+        ),
+        builder: (_) {
+          return StatefulBuilder(
+            builder: (context, setModalState) {
+              Widget slider({
+                required double value,
+                required ValueChanged<double> onChanged,
+              }) {
+                return SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: 2.0,
+                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                  ),
+                  child: Slider(
+                    value: value,
+                    onChanged: onChanged,
+                    min: 0,
+                    max: 1,
+                  ),
+                );
+              }
+
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4A4A48).withOpacity(0.18),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    SwitchListTile.adaptive(
+                      value: _soundMasterEnabled,
+                      onChanged: (v) async {
+                        setState(() => _soundMasterEnabled = v);
+                        if (!_soundMasterEnabled) {
+                          unawaited(SoundManager.instance.stopAmbient());
+                        } else if (_ambienceEnabled) {
+                          unawaited(SoundManager.instance.startAmbient());
+                        }
+                        setModalState(() {});
+                      },
+                      title: const Text('Sound'),
+                    ),
+                    Opacity(
+                      opacity: _soundMasterEnabled ? 1 : 0.5,
+                      child: Column(
+                        children: [
+                          SwitchListTile.adaptive(
+                            value: _ambienceEnabled,
+                            onChanged: _soundMasterEnabled
+                                ? (v) {
+                                    setState(() => _ambienceEnabled = v);
+                                    if (_soundMasterEnabled && _ambienceEnabled) {
+                                      unawaited(SoundManager.instance.startAmbient());
+                                    } else {
+                                      unawaited(SoundManager.instance.stopAmbient());
+                                    }
+                                    setModalState(() {});
+                                  }
+                                : null,
+                            title: const Text('Ambience'),
+                          ),
+                          slider(
+                            value: _ambienceVolume,
+                            onChanged: _soundMasterEnabled && _ambienceEnabled
+                                ? (v) {
+                                    setState(() => _ambienceVolume = v);
+                                    SoundManager.instance.setAmbientVolume(v);
+                                    setModalState(() {});
+                                  }
+                                : (_) {},
+                          ),
+                          SwitchListTile.adaptive(
+                            value: _musicEnabled,
+                            onChanged: _soundMasterEnabled
+                                ? (v) {
+                                    setState(() => _musicEnabled = v);
+                                    setModalState(() {});
+                                  }
+                                : null,
+                            title: const Text('Music'),
+                          ),
+                          slider(
+                            value: _musicVolume,
+                            onChanged: _soundMasterEnabled && _musicEnabled
+                                ? (v) {
+                                    setState(() => _musicVolume = v);
+                                    setModalState(() {});
+                                  }
+                                : (_) {},
+                          ),
+                          SwitchListTile.adaptive(
+                            value: _sfxEnabled,
+                            onChanged: _soundMasterEnabled
+                                ? (v) {
+                                    setState(() => _sfxEnabled = v);
+                                    setModalState(() {});
+                                  }
+                                : null,
+                            title: const Text('Effects'),
+                          ),
+                          slider(
+                            value: _sfxVolume,
+                            onChanged: _soundMasterEnabled && _sfxEnabled
+                                ? (v) {
+                                    setState(() => _sfxVolume = v);
+                                    SoundManager.instance.setSfxVolume(v);
+                                    setModalState(() {});
+                                  }
+                                : (_) {},
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      );
+    }
   }
 }
 
@@ -1019,144 +1157,6 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     final tidelineSettled =
         primaryReadingRevealed ? _frontLoadedSettling(interactionProgress) : 0.0;
 
-    void openAudioSheet() {
-      if (_soundMasterEnabled && _sfxEnabled) {
-        unawaited(SoundManager.instance.playTap());
-      }
-      showModalBottomSheet(
-        context: context,
-        backgroundColor: const Color(0xFFFAF8F0),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-        ),
-        builder: (_) {
-          return StatefulBuilder(
-            builder: (context, setModalState) {
-              Widget slider({
-                required double value,
-                required ValueChanged<double> onChanged,
-              }) {
-                return SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    trackHeight: 2.0,
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                  ),
-                  child: Slider(
-                    value: value,
-                    onChanged: onChanged,
-                    min: 0,
-                    max: 1,
-                  ),
-                );
-              }
-
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF4A4A48).withOpacity(0.18),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    SwitchListTile.adaptive(
-                      value: _soundMasterEnabled,
-                      onChanged: (v) async {
-                        setState(() => _soundMasterEnabled = v);
-                        if (!_soundMasterEnabled) {
-                          unawaited(SoundManager.instance.stopAmbient());
-                        } else if (_ambienceEnabled) {
-                          unawaited(SoundManager.instance.startAmbient());
-                        }
-                        setModalState(() {});
-                      },
-                      title: const Text('Sound'),
-                    ),
-                    Opacity(
-                      opacity: _soundMasterEnabled ? 1 : 0.5,
-                      child: Column(
-                        children: [
-                          SwitchListTile.adaptive(
-                            value: _ambienceEnabled,
-                            onChanged: _soundMasterEnabled
-                                ? (v) {
-                                    setState(() => _ambienceEnabled = v);
-                                    if (_soundMasterEnabled && _ambienceEnabled) {
-                                      unawaited(SoundManager.instance.startAmbient());
-                                    } else {
-                                      unawaited(SoundManager.instance.stopAmbient());
-                                    }
-                                    setModalState(() {});
-                                  }
-                                : null,
-                            title: const Text('Ambience'),
-                          ),
-                          slider(
-                            value: _ambienceVolume,
-                            onChanged: _soundMasterEnabled && _ambienceEnabled
-                                ? (v) {
-                                    setState(() => _ambienceVolume = v);
-                                    SoundManager.instance.setAmbientVolume(v);
-                                    setModalState(() {});
-                                  }
-                                : (_) {},
-                          ),
-                          SwitchListTile.adaptive(
-                            value: _musicEnabled,
-                            onChanged: _soundMasterEnabled
-                                ? (v) {
-                                    setState(() => _musicEnabled = v);
-                                    setModalState(() {});
-                                  }
-                                : null,
-                            title: const Text('Music'),
-                          ),
-                          slider(
-                            value: _musicVolume,
-                            onChanged: _soundMasterEnabled && _musicEnabled
-                                ? (v) {
-                                    setState(() => _musicVolume = v);
-                                    setModalState(() {});
-                                  }
-                                : (_) {},
-                          ),
-                          SwitchListTile.adaptive(
-                            value: _sfxEnabled,
-                            onChanged: _soundMasterEnabled
-                                ? (v) {
-                                    setState(() => _sfxEnabled = v);
-                                    setModalState(() {});
-                                  }
-                                : null,
-                            title: const Text('Effects'),
-                          ),
-                          slider(
-                            value: _sfxVolume,
-                            onChanged: _soundMasterEnabled && _sfxEnabled
-                                ? (v) {
-                                    setState(() => _sfxVolume = v);
-                                    SoundManager.instance.setSfxVolume(v);
-                                    setModalState(() {});
-                                  }
-                                : (_) {},
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
-        },
-      );
-    }
 
     return Scaffold(
       body: Builder(
@@ -1283,7 +1283,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                   ),
                 ),
               ),
-              // Audio controls (quiet, top-right)
+              // Settings button (top-right)
               Positioned(
                 top: 40,
                 right: 16,
@@ -1300,7 +1300,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                     iconSize: 18,
                     onPressed: openAudioSheet,
                     icon: Icon(
-                      _soundMasterEnabled ? Icons.volume_up : Icons.volume_off,
+                      Icons.settings,
                       color: const Color(0xFF4A4A48).withOpacity(0.72),
                     ),
                   ),
