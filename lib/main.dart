@@ -47,28 +47,28 @@ final _themePalettes = {
   kThemeOcean: {
     'primaryButton': Color(0xFFA3D5D3), // Aqua blue-green
     'primaryButtonText': Color(0xFF4A4A48),
-    'ctaButton': Color(0xFFA3D5D3), // Pastel sea-glass blue-green, matches primaryButton for full parity
+    'ctaButton': Color(0x30A3D5D3), // low-opacity match of primaryButton
     'ctaBorder': Color(0xFF8FAFB3), // Muted mist blue. Harmonizes with ocean variance field and avoids green
-    'tidelineTop': Color(0x2E6FAFB3),  // Mist blue, ~18% (Ocean)
-    'tidelineBottom': Color(0x0F6FAFB3),// Mist blue, ~6%
+    'tidelineTop': Color(0x3E23C0E8), // 24% of Ocean's theme hue
+    'tidelineBottom': Color(0x1B23C0E8), // 11% of Ocean's hue
     'tidelineText': Color(0xFF4A4A48),
   },
   kThemeForest: {
-    'primaryButton': Color(0xFFD6E3DB), // Calm green-grey pastel
+    'primaryButton': Color(0x594CB866), // 35% opacity for calm match with other themes
     'primaryButtonText': Color(0xFF4A4A48),
-    'ctaButton': Color(0xFFB8C9B3),    // Very muted sage/olive
+    'ctaButton': Color(0x304CB866), // low-opacity match of primaryButton
     'ctaBorder': Color(0xFFA8B6A6),    // muted olive edge
-    'tidelineTop': Color(0x3E97B89C),  // Olive green, ~24% opacity
-    'tidelineBottom': Color(0x1B568167),// Deeper olive green, ~11% opacity
+    'tidelineTop': Color(0x3E4CB866), // 24% of Forest hue
+    'tidelineBottom': Color(0x1B4CB866), // 11% of Forest hue
     'tidelineText': Color(0xFF4A4A48),
   },
   kThemeAutumn: {
     'primaryButton': Color(0xFFF6E3CB), // Soft muted cream/amber
     'primaryButtonText': Color(0xFF4A4A48),
-    'ctaButton': Color(0xFFE8DCC6),    // Muted pastel beige
+    'ctaButton': Color(0x30FFD34D), // low-opacity match of primaryButton
     'ctaBorder': Color(0xFFC3B5A3),    // Beige-tan edge
-    'tidelineTop': Color(0x3EE5C28F),  // Rich amber, ~24% opacity
-    'tidelineBottom': Color(0x1BAC8950),// Deep warm brown, ~11% opacity
+    'tidelineTop': Color(0x3EFFD34D), // 24% of Autumn hue
+    'tidelineBottom': Color(0x1BFFD34D), // 11% of Autumn hue
     'tidelineText': Color(0xFF4A4A48),
   },
 };
