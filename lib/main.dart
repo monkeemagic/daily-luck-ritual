@@ -103,121 +103,151 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
         right: 16,
         bottom: 24,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'Settings',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: palette['primaryButtonText'] ?? const Color(0xFF4A4A48),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Settings',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: palette['primaryButtonText'] ?? const Color(0xFF4A4A48),
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          StatefulBuilder(
-            builder: (context, setModalState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SwitchListTile(
-                    value: _soundMasterEnabled,
-                    title: const Text('Sound (Master switch)', style: TextStyle(fontSize: 16)),
-                    activeColor: palette['primaryButton'] ?? const Color(0xFFA3D5D3),
-                    onChanged: (val) {
-                      setState(() {
-                        _soundMasterEnabled = val;
-                        if (!val) {
-                          SoundManager.instance.stopAll();
-                        } else if (_ambienceEnabled) {
-                          SoundManager.instance.startAmbient();
-                        }
-                      });
-                      setModalState(() {});
-                    },
-                  ),
-                  SwitchListTile(
-                    value: _ambienceEnabled,
-                    title: const Text('Ambient sound', style: TextStyle(fontSize: 16)),
-                    activeColor: palette['primaryButton'] ?? const Color(0xFFA3D5D3),
-                    onChanged: _soundMasterEnabled
-                        ? (val) {
-                            setState(() {
-                              _ambienceEnabled = val;
-                              if (val && _soundMasterEnabled) {
-                                SoundManager.instance.startAmbient();
-                              } else {
-                                SoundManager.instance.stopAmbient();
+            const SizedBox(height: 16),
+            StatefulBuilder(
+              builder: (context, setModalState) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SwitchListTile(
+                      value: _soundMasterEnabled,
+                      title: const Text('Sound (Master switch)', style: TextStyle(fontSize: 16)),
+                      activeColor: palette['primaryButton'] ?? const Color(0xFFA3D5D3),
+                      onChanged: (val) {
+                        setState(() {
+                          _soundMasterEnabled = val;
+                          if (!val) {
+                            SoundManager.instance.stopAll();
+                          } else if (_ambienceEnabled) {
+                            SoundManager.instance.startAmbient();
+                          }
+                        });
+                        setModalState(() {});
+                      },
+                    ),
+                    SwitchListTile(
+                      value: _ambienceEnabled,
+                      title: const Text('Ambient sound', style: TextStyle(fontSize: 16)),
+                      activeColor: palette['primaryButton'] ?? const Color(0xFFA3D5D3),
+                      onChanged: _soundMasterEnabled
+                          ? (val) {
+                              setState(() {
+                                _ambienceEnabled = val;
+                                if (val && _soundMasterEnabled) {
+                                  SoundManager.instance.startAmbient();
+                                } else {
+                                  SoundManager.instance.stopAmbient();
+                                }
+                              });
+                              setModalState(() {});
+                            }
+                          : null,
+                    ),
+                    SwitchListTile(
+                      value: _sfxEnabled,
+                      title: const Text('Button tap sound', style: TextStyle(fontSize: 16)),
+                      activeColor: palette['primaryButton'] ?? const Color(0xFFA3D5D3),
+                      onChanged: _soundMasterEnabled
+                          ? (val) {
+                              setState(() {
+                                _sfxEnabled = val;
+                              });
+                              setModalState(() {});
+                            }
+                          : null,
+                    ),
+                    ListTile(
+                      title: const Text('Ambient volume', style: TextStyle(fontSize: 15)),
+                      subtitle: Slider(
+                        value: _ambienceVolume,
+                        min: 0,
+                        max: 1,
+                        onChanged: _soundMasterEnabled && _ambienceEnabled
+                            ? (v) {
+                                setModalState(() {
+                                  _ambienceVolume = v;
+                                });
                               }
-                            });
-                            setModalState(() {});
-                          }
-                        : null,
-                  ),
-                  SwitchListTile(
-                    value: _sfxEnabled,
-                    title: const Text('Button tap sound', style: TextStyle(fontSize: 16)),
-                    activeColor: palette['primaryButton'] ?? const Color(0xFFA3D5D3),
-                    onChanged: _soundMasterEnabled
-                        ? (val) {
-                            setState(() {
-                              _sfxEnabled = val;
-                            });
-                            setModalState(() {});
-                          }
-                        : null,
-                  ),
-                  ListTile(
-                    title: const Text('Ambient volume', style: TextStyle(fontSize: 15)),
-                    subtitle: Slider(
-                      value: _ambienceVolume,
-                      min: 0,
-                      max: 1,
-                      onChanged: _soundMasterEnabled && _ambienceEnabled
-                          ? (v) {
-                              setModalState(() {
-                                _ambienceVolume = v;
-                              });
-                            }
-                          : null,
-                      onChangeEnd: _soundMasterEnabled && _ambienceEnabled
-                          ? (v) {
-                              setState(() {
-                                _ambienceVolume = v;
-                                SoundManager.instance.setAmbientVolume(v);
-                              });
-                            }
-                          : null,
+                            : null,
+                        onChangeEnd: _soundMasterEnabled && _ambienceEnabled
+                            ? (v) {
+                                setState(() {
+                                  _ambienceVolume = v;
+                                  SoundManager.instance.setAmbientVolume(v);
+                                });
+                              }
+                            : null,
+                      ),
                     ),
-                  ),
-                  ListTile(
-                    title: const Text('Button tap volume', style: TextStyle(fontSize: 15)),
-                    subtitle: Slider(
-                      value: _sfxVolume,
-                      min: 0,
-                      max: 1,
-                      onChanged: _soundMasterEnabled && _sfxEnabled
-                          ? (v) {
-                              setModalState(() {
-                                _sfxVolume = v;
-                              });
-                            }
-                          : null,
-                      onChangeEnd: _soundMasterEnabled && _sfxEnabled
-                          ? (v) {
-                              setState(() {
-                                _sfxVolume = v;
-                                SoundManager.instance.setSfxVolume(v);
-                              });
-                            }
-                          : null,
+                    ListTile(
+                      title: const Text('Button tap volume', style: TextStyle(fontSize: 15)),
+                      subtitle: Slider(
+                        value: _sfxVolume,
+                        min: 0,
+                        max: 1,
+                        onChanged: _soundMasterEnabled && _sfxEnabled
+                            ? (v) {
+                                setModalState(() {
+                                  _sfxVolume = v;
+                                });
+                              }
+                            : null,
+                        onChangeEnd: _soundMasterEnabled && _sfxEnabled
+                            ? (v) {
+                                setState(() {
+                                  _sfxVolume = v;
+                                  SoundManager.instance.setSfxVolume(v);
+                                });
+                              }
+                            : null,
+                      ),
                     ),
-                  ),
-                ],
-              );
-            }
-          ),
-        ],
+                    const SizedBox(height: 22),
+                    const Text(
+                      'About',
+                      style: TextStyle(
+                        fontSize: 17,
+                        color: Color(0xFF4A4A48),
+                        height: 1.55,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0,
+                      ),
+                      textAlign: TextAlign.left,
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'daily luck ritual is a quiet moment to pause.'
+                      '\n\nit doesn’t judge you or predict outcomes.'
+                      '\nit simply reflects where you are today.'
+                      '\n\nreturn whenever you need a breath.'
+                      '\n\n',
+                      textAlign: TextAlign.left,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Color(0xFF4A4A48),
+                        height: 1.55,
+                        fontWeight: FontWeight.w400,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ],
+                );
+              }
+            ),
+          ],
+        ),
       ),
     );
   }
