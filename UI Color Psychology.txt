@@ -1,0 +1,128 @@
+UI Color Psychology
+Gentle, muted palettes grounded in nature typically foster calmness and emotional safety. Studies note that
+blue and green hues lower stress and enhance balance ; for example, Calm’s palette uses deep sky-blue
+(#1B2250) and soft blue (#6282E3). Soft pastel blues, teals and sage greens promote trust and serenity ,
+while warm neutrals (cream, beige) add comfort. High contrast (dark text on light backgrounds) is vital for
+readability and accessibility. Accent colors should be sparing (≤10% usage) and gentle (e.g. pastel peach or
+lavender).
+Primary: Soft aqua-blue (#A3D5D3) – invokes tranquility (blue-green studies show positive mood
+effects).
+Secondary: Muted sage green (#B5CDA3) – ties to health and balance.
+Neutral/Background: Warm off-white or cream (#FAF8F0) – clean, inviting canvas.
+Accent: Pale peach (#FFCBA4) or lavender (#C3AED6) – adds uplift in small doses (e.g. buttons,
+highlights) .
+Contrast: Dark gray text (#4A4A48) on light backgrounds to meet accessibility standards; avoid
+harsh black or neon.
+By using muted, natural tones (earthy blues/greens and soft neutrals) rather than bright or saturated
+colors, the UI signals emotional safety and clarity. This aligns with trends showing wellness/meditation apps
+favor greens/blues .
+Spinner Icon (Ritual Wheel)
+Use smooth, organic shapes and nature metaphors to convey symbolic spinning, not competition.
+Suggestions:
+Metaphoric Wheel: A mandala or lotus that slowly rotates; or a sun/moon phase circle that aligns
+with time.
+Nature Motifs: A spinning leaf, feather or flower petals sequence; a rippling water circle (like a
+drop’s ripple) representing gentle flow.
+Spiritual Motifs: A dreamcatcher/spiral pattern or Tibetan prayer wheel concept, but stylized
+with minimal lines (as in Headspace’s friendly curves).
+Animation Style: Very slow, easing rotation with subtle glow or pulse (e.g. a faint aura expanding
+and contracting). Avoid sharp tick sounds or sudden jumps.
+The spinner’s segments should have curved edges and even spacing (no sharp, threatening angles).
+Colors on the wheel should remain within the calm palette (e.g. pastel segments); avoid red/green win/lose
+colors. The goal is a meditative ritual, so even if there is a pointer, design it as a floating leaf or soft arrow
+rather than a gaudy pointer.
+1
+1
+•
+•
+•
+•
+1
+•
+1 2
+•
+•
+•
+•
+1
+Luck Index UI
+The Luck Index should feel observational, not evaluative. Design ideas:
+Soft Gauge: Show luck as a gentle semi-circle or arc meter with a pastel gradient fill (e.g. dawn-tonoon sky). The pointer could be a small sun/moon icon that moves subtly. Use neutral hues (soft
+yellow/blue) rather than “good/bad” colors.
+Organic Animation: Animate the icon with a slow breathing pulse or glow rather than a sharp
+progress bar. For example, an icon that “breathes” (expanding/contracting circle) to indicate
+fluctuation without a numeric gauge.
+Natural Iconography: Use non-judgmental symbols (e.g. a clover leaf, star, or wave). It could
+morph gently (e.g. a wave rising and falling), suggesting ebb and flow of luck.
+Contextual Display: Accompany the index with a short text/phrase (“Gentle day ahead,” etc.) in soft
+typography. Always emphasize balance: e.g. if luck is “low,” the UI might shift to cooler blues; if
+“high,” warmer golds – but keep both subdued.
+Animations should be slow and calming (like a plant growing or tides moving, not a filling progress bar).
+Avoid success/failure cues (no green checkmarks or red warnings). For example, you might animate a lotus
+blooming slightly more for higher luck, but never use “rankings” or points. The Luck Index feels like a
+weather forecast for mood – informative but gentle.
+App Icon
+The icon should be simple, symbolic and inviting. Use a rounded or softly-curved shape (fits both iOS
+rounded-square and Android adaptive guidelines). Effective motifs include: a stylized lotus blossom, zen
+stone stack, rising sun/mountain, or dreamcatcher – elements that connote ritual and tranquility. For
+example, a lotus symbolizes purity and calm (as shown above). Avoid sharp angles or overly complex
+designs; Headspace’s use of simple friendly circles inspires an unthreatening feel.
+Shape & Lines: Round shapes and smooth curves only; no jagged edges or aggressive arrows. The
+icon mark itself can be circular or oval inside a rounded square.
+Imagery: Natural or spiritual symbols (lotus, leaf, cloud, candle flame); consider dual imagery (e.g.
+two interlocking shapes) to hint at balance. Icons like Calm’s use a simple graphic (a wave) in blue,
+while Headspace uses an orange circle. We suggest a similarly minimal silhouette (perhaps a lotus
+outline or abstract sun).
+Color: Use one or two muted core colors from the app palette. For example, a pale teal icon on
+cream, or a soft lavender on white background. If an accent is needed (for standout), use the chosen
+pastel accent hue rather than bright orange. Keep overall look clean and airy.
+Emotion: Convey calm and warmth. (Headspace’s vibrant orange shows energy, but our icon should
+feel more subdued.) The design should invite ritual/meditation, not gamification.
+By following platform guidelines (rounded-corner icon for iOS, adaptive layers for Android) and focusing on
+a clear symbolic image, the icon will stand out in stores while reflecting the app’s core value of gentle
+ritual.
+•
+•
+•
+•
+•
+•
+•
+•
+2
+Competitive ASO Visual Audit
+Color & Imagery: Top wellness/spiritual apps consistently use soft palettes and simple icons. For example,
+Calm and Insight Timer favor cool blues and greens , while Headspace breaks the mold with an orange
+circle. (In general, ASO research shows wellness/meditation apps often choose blue/green to signal
+tranquility .) Journaling/self-care apps often use cheerful illustrations or emotive characters (Daylio’s
+smiling mood-face icon, for instance). Spiritual or tarot apps lean on dark or cosmic motifs (stars, eyes,
+moons in purple/black) to evoke mystery.
+Iconography & UI Traits: Common UX patterns include minimal text/icons, generous white space, and
+nature-based graphics. For instance, Calm’s UI and icon use a simple wave form and blue hues;
+Headspace’s design is bold and minimal (flat shapes, sans-serif text). Apps like Shine or Oak Meditation use
+pastel gradients and gentle animations to feel nurturing. Most avoid gamification cues (no leaderboards
+or badges in sight) and instead show progress via subtle animations or journaling stats. In ASO terms, store
+screenshots emphasize serene imagery and testimonials, not points or high-scores.
+Patterns that Boost Retention: Brands with cohesive, soothing visual identity tend to perform better in
+this category. Our audit suggests that using consistent nature or spiritual iconography, a calm color
+scheme, and a clutter-free layout (as Calm and Insight Timer do) supports strong engagement .
+Conversely, overly bright or game-like visuals (red on green progress bars, flashing indicators) are rare in
+top-ranking “wellness” apps, as they conflict with the desired emotional tone.
+Platform Consistency
+All recommendations conform to Apple’s and Android’s guidelines:
+Apple (HIG) & Accessibility: Use SF Symbols and dynamic type for clarity. Ensure high contrast
+(dark text/graphics on light backgrounds or vice versa). Support Dark Mode with adjusted pastel
+tones (e.g. beige→dark blue backgrounds). Provide customizable themes (light/soothing mode vs.
+normal) as advised. Follow the Human Interface Guidelines for touch targets, legible fonts, and calm
+haptics/animations.
+Android (Material Design): Adopt Material 3, using responsive components and Motion. Leverage
+Material You’s dynamic color to allow the UI to adapt softly to user’s wallpaper while maintaining a
+tranquil base palette. Google specifically notes a wellness app can use “calming, expressive hues to
+soothe anxiety”. Ensure Material theming (shape, elevation) aligns with our soft aesthetic (e.g.
+rounded cards, gentle shadows).
+General Best Practices: Keep a uniform look across platforms (same icons, colors), while respecting
+each platform’s style (iOS rounded tabs vs. Android bottom nav). Always prioritize legibility and
+comfort: use the recommended font sizes and spacing. Test with VoiceOver/TalkBack to ensure the
+color scheme and UI affordances remain intuitive.
+By blending our calm, nature-inspired palette and iconography with both Apple’s HIG and Android’s
+Material guidelines, the app will feel native and inclusive on each platform.

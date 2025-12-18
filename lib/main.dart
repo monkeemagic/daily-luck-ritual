@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'sound_manager.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// ========================================
 /// APP VERSION
@@ -30,13 +31,9 @@ class DailyRitualApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.light,
-        scaffoldBackgroundColor: const Color(0xFFFAF8F0), // Warm cream from design doc
-        textTheme: const TextTheme(
-          bodyMedium: TextStyle(
-            color: Color(0xFF4A4A48), // Dark charcoal from design doc
-            height: 1.6, // Generous line height
-            letterSpacing: 0.3,
-          ),
+        scaffoldBackgroundColor: const Color(0xFFF3EADB), // Creamier, warmer off-white
+        textTheme: GoogleFonts.dmSansTextTheme(
+          Theme.of(context).textTheme,
         ),
       ),
       home: const AtmosphereScreen(),
@@ -84,7 +81,7 @@ class AtmosphereScreen extends StatefulWidget {
 }
 
 class _AtmosphereScreenState extends State<AtmosphereScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   // ========================================
   // 🍀 CORE STATE
   // ========================================
@@ -151,9 +148,9 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
   bool _ambienceEnabled = true;
   bool _musicEnabled = false; // legacy UI only; no music layer exists
   bool _sfxEnabled = true;
-  double _ambienceVolume = 0.6; // legacy UI only
+  double _ambienceVolume = 0.3; // legacy UI only
   double _musicVolume = 0.0; // legacy UI only
-  double _sfxVolume = 0.8; // legacy UI only
+  double _sfxVolume = 0.4; // legacy UI only
   bool _holdSfxPlayed = false;
 
   // Cached measurement to reserve stable space for reflection/hold-the-day text
@@ -185,12 +182,12 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
 
   // Pre-anchor access copy (canonical, locked set; rotates per session)
   static const List<String> _preAnchorAccessVariants = [
-    'Begin today’s ritual',
-    'Start today’s moment',
-    'Open today’s ritual',
-    'Today’s ritual is available',
-    'Today’s moment is ready',
-    'This part of today is open',
+    'begin today’s ritual',
+    'start today’s moment',
+    'open today’s ritual',
+    'today’s ritual is available',
+    'today’s moment is ready',
+    'this part of today is open',
   ];
   late String _preAnchorAccessCopy;
 
@@ -303,10 +300,16 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _ctaReady = true;
     _refreshPreAnchorAccessCopy();
     // Start audio after first frame; safe even before files are present (errors are swallowed).
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await SoundManager.instance.ensureVolumesLoaded();
+      setState(() {
+        _ambienceVolume = SoundManager.instance.ambientVolume;
+        _sfxVolume = SoundManager.instance.sfxVolume;
+      });
       if (_soundMasterEnabled && _ambienceEnabled) {
         unawaited(SoundManager.instance.startAmbient());
       }
@@ -366,6 +369,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     unawaited(SoundManager.instance.stopAmbient());
     tidelineController.dispose();
     tidelineGateController.dispose();
@@ -384,6 +388,31 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     if (newReduceMotion != _reduceMotion) {
       _reduceMotion = newReduceMotion;
       _updateTidelineMotion();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      SoundManager.instance.stopAll();
+    }
+    if (state == AppLifecycleState.resumed) {
+      SoundManager.instance.ensureVolumesLoaded().then((_) {
+        setState(() {
+          _ambienceVolume = SoundManager.instance.ambientVolume;
+          _sfxVolume = SoundManager.instance.sfxVolume;
+        });
+      });
+      if (_soundMasterEnabled && _ambienceEnabled) {
+        SoundManager.instance.startAmbient().then((_) {
+          setState(() {
+            _ambienceVolume = SoundManager.instance.ambientVolume;
+          });
+        });
+      }
+      // (SFX are always event-triggered, so they are not resumed blindly)
     }
   }
 
@@ -758,13 +787,13 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     }
 
     const meaningStyle = TextStyle(
-      fontSize: 14,
+      fontSize: 18,
       color: Color(0xFF4A4A48),
       height: 1.6,
       letterSpacing: 0.3,
     );
     const preAnchorStyle = TextStyle(
-      fontSize: 12,
+      fontSize: 14,
       color: Color(0xFF4A4A48),
       height: 1.5,
       letterSpacing: 0.2,
@@ -794,7 +823,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     }
 
     // Small cushion for font metrics differences and to keep the block breathable.
-    final result = (maxH + 2).clamp(28.0, 110.0);
+    final result = (maxH + 10).clamp(44.0, 130.0); // Increased padding for larger font/line height
     _cachedMeaningBlockHeight = result;
     _cachedMeaningBlockWidth = width;
     _cachedTextScaleFactor = textScale;
@@ -971,12 +1000,12 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     }
 
     final primaryLabel = isSampling
-        ? 'Settling…'
+        ? 'settling…'
         : !primaryReadingTakenToday
-        ? 'Receive today’s reading'
+        ? 'receive today’s reading'
         : canAffordObservation
-        ? 'Settle a little longer'
-        : 'This is enough for today.';
+        ? 'settle a little longer'
+        : 'this is enough for today.';
     final bool isEnoughLabel = primaryReadingTakenToday && !canAffordObservation;
     final String holdTheDayTextForToday =
         _getHoldTheDayText(holdTheDayVariantId ?? 0);
@@ -1069,6 +1098,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                             onChanged: _soundMasterEnabled && _ambienceEnabled
                                 ? (v) {
                                     setState(() => _ambienceVolume = v);
+                                    SoundManager.instance.setAmbientVolume(v);
                                     setModalState(() {});
                                   }
                                 : (_) {},
@@ -1107,6 +1137,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                             onChanged: _soundMasterEnabled && _sfxEnabled
                                 ? (v) {
                                     setState(() => _sfxVolume = v);
+                                    SoundManager.instance.setSfxVolume(v);
                                     setModalState(() {});
                                   }
                                 : (_) {},
@@ -1285,7 +1316,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                         '🍀 Today’s Luck Index',
                         style: TextStyle(
                           fontWeight: FontWeight.w400,
-                          fontSize: 15,
+                          fontSize: 20, // Micro bump for balance if needed
                           color: Color(0xFF4A4A48),
                           letterSpacing: 0.5,
                         ),
@@ -1294,7 +1325,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                     const SizedBox(height: 4),
                     // Keep layout stable: reserve space always, only opacity changes.
                     SizedBox(
-                      height: 56,
+                      height: 72, // Increased from 68 to match new lineHeight
                       child: Center(
                         child: AnimatedOpacity(
                           duration: const Duration(milliseconds: 260),
@@ -1307,11 +1338,12 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                           onEnd: _onLuckIndexRevealed,
                           child: Text(
                             '${luckIndex.toStringAsFixed(2)}%',
-                            style: const TextStyle(
-                              fontSize: 48,
-                              fontWeight: FontWeight.w300,
-                              color: Color(0xFF4A4A48),
-                              letterSpacing: 1.0,
+                            style: TextStyle(
+                              fontSize: 56,
+                              fontWeight: FontWeight.w400, // back to regular
+                              color: Color(0xCC3C362E),   // Warm, muted dark (80% opacity)
+                              letterSpacing: 0.6,         // Gentle tracking
+                              height: 1.22, // Increased line height for better glyph seating
                             ),
                           ),
                         ),
@@ -1335,11 +1367,12 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                                         _preAnchorAccessCopy,
                                         key: ValueKey<String>('pre_anchor_${_preAnchorAccessCopy}'),
                                         textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Color(0xFF4A4A48),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Color(0xFF474442),      // Match body text
                                           height: 1.5,
-                                          letterSpacing: 0.2,
+                                          letterSpacing: 0.3,            // Slight increase
+                                          fontWeight: FontWeight.w500,   // Slightly bolder
                                         ),
                                       )
                                     : (primaryReadingRevealed && (dailyReflection != null || isDayComplete))
@@ -1349,11 +1382,12 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                                               isDayComplete ? 'hold_${holdTheDayVariantId ?? 0}' : 'reflection',
                                             ),
                                             textAlign: TextAlign.center,
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              color: Color(0xFF4A4A48),
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              color: Color(0xFF474442),      // Softer, grounded charcoal
                                               height: 1.6,
-                                              letterSpacing: 0.3,
+                                              letterSpacing: 0.4,            // Light increase for structure
+                                              fontWeight: FontWeight.w500,   // Slightly bolder for clarity
                                             ),
                                           )
                                         : const SizedBox.shrink(key: ValueKey<String>('secondary_empty')),
@@ -1415,7 +1449,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                               ),
                               elevation: 1,
                               textStyle: const TextStyle(
-                                fontSize: 15,
+                                fontSize: 16, // Increased from 15 for button text clarity
                                 fontWeight: FontWeight.w400,
                                 letterSpacing: 0.5,
                               ),
@@ -1447,7 +1481,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 14,
-                                    vertical: 6,
+                                    vertical: 5,
                                   ),
                                   decoration: BoxDecoration(
                                     // Lighten CTA pill background for Forest and Autumn by alpha blending with atmosphere baseline
@@ -1467,9 +1501,9 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                                     // No border: monetization CTA should not have outline
                                   ),
                                   child: Text(
-                                    'Pause with a short moment',
+                                    'pause briefly',
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: 16,
                                       color: palette['primaryButtonText'] ?? Color(0xFF4A4A48),
                                       letterSpacing: 0.3,
                                       fontWeight: FontWeight.w400,
