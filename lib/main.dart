@@ -86,6 +86,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
   // Expose IAP ownership for Forest and Autumn theme unlocking
   bool get _forestUnlocked => IapService.instance.owns(kThemeForest);
   bool get _autumnUnlocked => IapService.instance.owns(kThemeAutumn);
+  bool get _isSupporter => IapService.instance.owns(kSupportProject);
   // Ocean theme is always unlocked
 
   // ========================================
@@ -342,7 +343,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                       ),
                     ),
                     GestureDetector(
-                      onTap: () async {
+                      onTap: _isSupporter ? null : () async {
                         await IapService.instance.buy(kSupportProject);
                       },
                       child: Padding(
@@ -352,7 +353,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                           children: [
                             Expanded(
                               child: Text(
-                                'show appreciation',
+                                _isSupporter ? 'much appreciated' : 'show appreciation',
                                 style: TextStyle(
                                   fontSize: 16,
                                   color: Color(0xFF4A4A48),
@@ -361,7 +362,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                                 ),
                               ),
                             ),
-                            Icon(Icons.chevron_right, size: 16, color: Color(0xFF222222).withOpacity(0.62)),
+                            if (!_isSupporter) Icon(Icons.chevron_right, size: 16, color: Color(0xFF222222).withOpacity(0.62)),
                           ],
                         ),
                       ),
@@ -475,25 +476,6 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
   Timer? _ctaRevealTimer;
   bool _ctaReady = true;
 
-  // Pre-anchor access copy (canonical, locked set; rotates per session)
-  static const List<String> _preAnchorAccessVariants = [
-    'begin today’s ritual',
-    'start today’s moment',
-    'open today’s ritual',
-    'today’s ritual is available',
-    'today’s moment is ready',
-    'this part of today is open',
-  ];
-  late String _preAnchorAccessCopy;
-
-  void _refreshPreAnchorAccessCopy() {
-    // Rotates per session/day reset; not persisted (per spec).
-    final seed = DateTime.now().microsecondsSinceEpoch;
-    final rnd = Random(seed);
-    _preAnchorAccessCopy =
-        _preAnchorAccessVariants[rnd.nextInt(_preAnchorAccessVariants.length)];
-  }
-
   // Step 4E: Tideline (ambient settling visual)
   late final AnimationController tidelineController;
   late final AnimationController tidelineGateController;
@@ -598,7 +580,6 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _ctaReady = true;
-    _refreshPreAnchorAccessCopy();
     // Start audio after first frame; safe even before files are present (errors are swallowed).
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await SoundManager.instance.ensureVolumesLoaded();
@@ -665,7 +646,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     ]).animate(holdController);
 
     _loadDailyState();
-    
+
     // Preload ad on app start if primary reading already revealed
     Future.delayed(const Duration(milliseconds: 500), () {
       if (primaryReadingRevealed && !adsExhausted) {
@@ -873,7 +854,6 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
       _holdSfxPlayed = false;
       _readingWasRevealedAtSamplingStart = false;
       daySettled = false;
-      _refreshPreAnchorAccessCopy();
     });
 
     _ctaReady = true;
@@ -946,7 +926,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
   // ========================================
   // 🧘 STEP 4: MEANING & REFLECTION (LOCKED)
   // ========================================
-  
+
   // Step 4A: The 12 locked meaning archetypes
   static const List<String> _meaningArchetypes = [
     'Grounded',
@@ -1122,14 +1102,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
       )..layout(maxWidth: width);
       if (tp.height > maxH) maxH = tp.height;
     }
-    for (final t in _preAnchorAccessVariants) {
-      final tp = TextPainter(
-        text: TextSpan(text: t, style: preAnchorStyle),
-        textDirection: TextDirection.ltr,
-        textScaleFactor: textScale,
-      )..layout(maxWidth: width);
-      if (tp.height > maxH) maxH = tp.height;
-    }
+
 
     // Small cushion for font metrics differences and to keep the block breathable.
     final result = (maxH + 10).clamp(44.0, 130.0); // Increased padding for larger font/line height
@@ -1205,9 +1178,8 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
   // 🌫️ ATMOSPHERE SAMPLING FLOW (MECHANICS UNCHANGED)
   // ========================================
   Future<void> sampleAtmosphere() async {
-    if (isSampling || observationCredits < nextObservationCost) return;
-
     final bool isPrimaryReading = !primaryReadingTakenToday;
+    if (isSampling || (!isPrimaryReading && observationCredits < nextObservationCost)) return;
 
     // Remove pre-sampling haze hold logic (variance phasing now via build).
 
@@ -1218,7 +1190,9 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
       // Keep secondary UI from “arriving” while the atmosphere system is active.
       _ctaReady = false;
       _ctaRevealTimer?.cancel();
-      observationCredits -= nextObservationCost;
+      if (!isPrimaryReading) {
+        observationCredits -= nextObservationCost;
+      }
       if (isPrimaryReading) {
         pendingPrimaryReadingLuck = _anchorLuck();
         primaryReadingTakenToday = true;
@@ -1283,7 +1257,8 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
   // ========================================
   @override
   Widget build(BuildContext context) {
-    final canAffordObservation = observationCredits >= nextObservationCost;
+    final canAffordObservation =
+        !primaryReadingTakenToday || observationCredits >= nextObservationCost;
 
     // Canonical semantics:
     // - Variance is perceptible during sampling
@@ -1321,6 +1296,11 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
 
           return Stack(
             children: [
+              Positioned.fill(
+                child: ColoredBox(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                ),
+              ),
               // AtmosphericField: baseline environment layer with temporary variance energy.
               // No masks/feathering here (single-axis softening is handled in the painter).
               Positioned.fill(
@@ -1527,35 +1507,23 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                             switchOutCurve: Curves.easeOut,
                             transitionBuilder: (child, anim) =>
                                 FadeTransition(opacity: anim, child: child),
-                            child: !primaryReadingTakenToday
+                            child: (primaryReadingRevealed && (dailyReflection != null || isDayComplete))
                                 ? Text(
-                                    _preAnchorAccessCopy,
-                                    key: ValueKey<String>('pre_anchor_${_preAnchorAccessCopy}'),
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Color(0xFF474442),
-                                      height: 1.5,
-                                      letterSpacing: 0.3,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  )
-                                : (primaryReadingRevealed && (dailyReflection != null || isDayComplete))
-                                    ? Text(
-                                        isDayComplete ? holdTheDayTextForToday : dailyReflection!,
-                                        key: ValueKey<String>(
-                                          isDayComplete ? 'hold_${holdTheDayVariantId ?? 0}' : 'reflection',
-                                        ),
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          color: Color(0xFF474442),
-                                          height: 1.6,
-                                          letterSpacing: 0.4,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      )
-                                    : const SizedBox.shrink(key: ValueKey<String>('secondary_empty')),
+                              isDayComplete ? holdTheDayTextForToday : dailyReflection!,
+                              key: ValueKey<String>(
+                                isDayComplete ? 'hold_${holdTheDayVariantId ?? 0}' : 'reflection',
+                              ),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Color(0xFF474442),
+                                height: 1.6,
+                                letterSpacing: 0.4,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            )
+                                : const SizedBox(height: 1, key: ValueKey<String>('secondary_empty')),
+
                           ),
                         ),
                       ),
@@ -1681,25 +1649,6 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                             )
                           : const SizedBox.shrink(),
                     ),
-                    if (kDebugMode)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 18),
-                        child: Wrap(
-                          alignment: WrapAlignment.center,
-                          spacing: 12,
-                          runSpacing: 8,
-                          children: [
-                            TextButton(
-                              onPressed: _resetDay,
-                              child: const Text('DEV: Reset Day'),
-                            ),
-                            TextButton(
-                              onPressed: _cycleDevTheme,
-                              child: Text('DEV: Cycle Theme (${_devThemeLabel})'),
-                            ),
-                          ],
-                        ),
-                      ),
                   ],
                 ),
               ),
