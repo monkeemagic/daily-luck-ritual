@@ -228,11 +228,12 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                     ),
                     const SizedBox(height: 4),
                     const Text(
-                      'daily luck ritual is a quiet moment to pause.'
-                      '\n\nit doesn’t judge you or predict outcomes.'
-                      '\nit simply reflects where you are today.'
-                      '\n\nreturn whenever you need a breath.'
-                      '\n\n',
+                      'daily luck ritual was made as a quiet space to pause.'
+                          '\n\nit doesn’t predict outcomes or tell you who to be.'
+                          '\nit simply reflects a moment, once per day.'
+                          '\n\nthere are no streaks, no pressure, and nothing to keep up with.'
+                          '\n\nif it helps you slow down, that’s enough.'
+                          '\n\n',
                       textAlign: TextAlign.left,
                       style: TextStyle(
                         fontSize: 15,
@@ -242,6 +243,109 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                         letterSpacing: 0,
                       ),
                     ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'support',
+                      style: TextStyle(
+                        fontSize: 17,
+                        color: Color(0xFF4A4A48),
+                        height: 1.55,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0,
+                      ),
+                      textAlign: TextAlign.left,
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'this app is made independently and kept intentionally simple.',
+                      textAlign: TextAlign.left,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Color(0xFF4A4A48),
+                        height: 1.55,
+                        fontWeight: FontWeight.w400,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ListTile(
+                      title: Text(
+                        'help sustain this project',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF4A4A48),
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.05,
+                        ),
+                      ),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 2),
+                      enabled: true,
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          backgroundColor: const Color(0xFFFAF8F0),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+                          ),
+                          builder: (_) => SafeArea(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 22),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Center(
+                                    child: Text(
+                                      'thank you',
+                                      style: TextStyle(
+                                        fontSize: 21,
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xFF4A4A48),
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 18),
+                                  const Text(
+                                    'daily luck ritual is maintained and nurtured over time.'
+                                        '\n\nyour contributions enable development,'
+                                        '\ninfrastructure, and future improvements.'
+                                        '\n\nyour daily ritual is always free and unchanged.'
+                                        '\n',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      color: Color(0xFF4A4A48),
+                                      height: 1.55,
+                                      fontWeight: FontWeight.w400,
+                                      letterSpacing: 0,
+                                    ),
+                                    textAlign: TextAlign.left,
+                                  ),
+                                  const SizedBox(height: 18),
+                                  ListTile(
+                                    title: Text(
+                                      'unlock themes / show appreciation',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Color(0xFF4A4A48),
+                                        fontWeight: FontWeight.w500,
+                                        letterSpacing: 0.05,
+                                      ),
+                                    ),
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 2),
+                                    enabled: false,
+                                    onTap: null, // stub/no logic
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+
+
+
                   ],
                 );
               }
