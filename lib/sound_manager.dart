@@ -9,6 +9,7 @@ class SoundManager {
   final AudioPlayer _sfxPlayer = AudioPlayer();
 
   bool _ambientStarted = false;
+  double _ambientVolume = 0.6;
 
   Future<void> startAmbient() async {
     if (_ambientStarted) return;
@@ -17,7 +18,7 @@ class SoundManager {
     try {
       await _ambientPlayer.setAsset('assets/audio/ambience/ocean_ambient.wav');
       await _ambientPlayer.setLoopMode(LoopMode.one);
-      await _ambientPlayer.setVolume(0.6);
+      await _ambientPlayer.setVolume(_ambientVolume);
       await _ambientPlayer.play();
     } catch (_) {}
   }
@@ -35,6 +36,13 @@ class SoundManager {
       await _sfxPlayer.setVolume(0.8);
       await _sfxPlayer.play();
     } catch (_) {}
+  }
+
+  /// Sets the ambient audio volume (clamped between 0.0 and 1.0) and updates the active ambient player immediately.
+  void setAmbientVolume(double volume) {
+    final clamped = volume.clamp(0.0, 1.0);
+    _ambientVolume = clamped;
+    _ambientPlayer.setVolume(_ambientVolume);
   }
 
   Future<void> dispose() async {
