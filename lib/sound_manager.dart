@@ -58,8 +58,16 @@ class SoundManager {
     try {
       await _ambientPlayer.setAsset('assets/audio/ambience/ocean_ambient.wav');
       await _ambientPlayer.setLoopMode(LoopMode.one);
-      await _ambientPlayer.setVolume(_effectiveAmbientVolume);
+      await _ambientPlayer.setVolume(0.0); // Start at zero, fade in
       await _ambientPlayer.play();
+      final targetVol = _effectiveAmbientVolume;
+      const fadeSteps = 20;
+      const fadeDuration = Duration(milliseconds: 2000);
+      for (int i = 1; i <= fadeSteps; i++) {
+        await Future.delayed(Duration(milliseconds: fadeDuration.inMilliseconds ~/ fadeSteps));
+        final vol = targetVol * (i / fadeSteps);
+        await _ambientPlayer.setVolume(vol);
+      }
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint('SoundManager.startAmbient failed: $e');

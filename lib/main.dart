@@ -1406,7 +1406,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                       duration: const Duration(milliseconds: 450),
                       curve: Curves.easeOut,
                       // Only dim once sampling has resolved, so the change lands with the number update.
-                      opacity: (!isSampling && isEnoughLabel) ? 0.35 : 1.0,
+                      opacity: (!isSampling && isEnoughLabel) ? 0.50 : 1.0,
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(
                           maxWidth: 280, // Constrain width (not full screen)
