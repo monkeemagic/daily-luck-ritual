@@ -4,6 +4,7 @@ class SoundManager {
   SoundManager._internal();
 
   static final SoundManager instance = SoundManager._internal();
+  static const double _maxAmbientVolume = 0.5;
 
   final AudioPlayer _ambientPlayer = AudioPlayer();
   final AudioPlayer _sfxPlayer = AudioPlayer();
@@ -41,9 +42,10 @@ class SoundManager {
   /// Sets the ambient audio volume (clamped between 0.0 and 1.0) and updates the active ambient player immediately.
   void setAmbientVolume(double volume) {
     final clamped = volume.clamp(0.0, 1.0);
-    _ambientVolume = clamped;
+    _ambientVolume = (clamped * clamped) * _maxAmbientVolume;
     _ambientPlayer.setVolume(_ambientVolume);
   }
+
 
   Future<void> dispose() async {
     await _ambientPlayer.dispose();
