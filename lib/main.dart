@@ -298,10 +298,10 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                     const SizedBox(height: 4),
                     const Text(
                       'daily luck ritual was made as a quiet space to pause\n\n'
-                      'it doesn’t predict outcomes or tell you who to be\n'
+                      'it doesn\'t predict outcomes or tell you who to be\n'
                       'it simply reflects a brief moment, once per day\n\n'
                       'there are no streaks, no pressure, and nothing to keep up with\n\n'
-                      'if it helps you slow down, that’s enough\n\n'
+                      'if it helps you slow down, that\'s enough\n\n'
                       'this app is made independently and kept intentionally simple',
                       textAlign: TextAlign.left,
                       style: TextStyle(
@@ -473,8 +473,6 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
 
   // Safety (non-verbal): require a deliberate gesture (long-press) to decline ads.
   Timer? _declineHoldTimer;
-  Timer? _ctaRevealTimer;
-  bool _ctaReady = true;
 
   // Step 4E: Tideline (ambient settling visual)
   late final AnimationController tidelineController;
@@ -541,8 +539,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
   bool get showCta =>
       primaryReadingRevealed &&
           !isSampling &&
-          observationCredits < nextObservationCost &&
-          _ctaReady;
+          observationCredits < nextObservationCost;
 
   // Step 4D: Day is complete (no further observation, ads exhausted OR declined, settling finished)
   bool get isDayComplete =>
@@ -556,7 +553,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
       (adsExhausted || adsDeclinedToday) ? 0.35 : 1.0;
 
   Future<void> _declineAdsAndCompleteDay() async {
-    // No new UI copy; this is an implicit “decline” via existing primary button
+    // No new UI copy; this is an implicit "decline" via existing primary button
     // when the user has no observation credit and does not take an ad.
     if (adsDeclinedToday || adsExhausted) return;
     if (!showCta) return;
@@ -579,7 +576,6 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _ctaReady = true;
     // Start audio after first frame; safe even before files are present (errors are swallowed).
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await SoundManager.instance.ensureVolumesLoaded();
@@ -604,7 +600,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
 
       // Keep wave phase continuous even as "settled" changes.
       // IMPORTANT: Do NOT scale phase as `time * speed` in the painter, since changing `speed`
-      // changes the absolute phase and reads as a “shove”. Instead, integrate speed into time.
+      // changes the absolute phase and reads as a "shove". Instead, integrate speed into time.
       final double settledNow =
           primaryReadingRevealed ? _frontLoadedSettling(interactionProgress) : 0.0;
       final bool canMove =
@@ -664,7 +660,6 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     holdController.dispose();
     rewardedAd?.dispose();
     _declineHoldTimer?.cancel();
-    _ctaRevealTimer?.cancel();
     super.dispose();
   }
 
@@ -712,7 +707,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     final shouldAnimate = (primaryReadingRevealed || isSampling) && !_reduceMotion;
     if (shouldAnimate) {
       if (!tidelineController.isAnimating) {
-        // Start from a stable phase/time to avoid any visible “jump” in shape.
+        // Start from a stable phase/time to avoid any visible "jump" in shape.
         _tidelineTime = 0.0;
         _tidelineWaveTime = 0.0;
         _lastTidelinePhase = 0.0;
@@ -724,7 +719,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
           tidelineController.repeat();
         }
       }
-      // Avoid a visible “start”: gently ramp motion in once the primary reading completes.
+      // Avoid a visible "start": gently ramp motion in once the primary reading completes.
       if (tidelineGateController.value == 0.0) {
         tidelineGateController.forward(from: 0);
       }
@@ -856,8 +851,6 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
       daySettled = false;
     });
 
-    _ctaReady = true;
-    _ctaRevealTimer?.cancel();
     _updateTidelineMotion();
 
     await prefs.setString(
@@ -962,13 +955,13 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
       'this moment does not require noise',
     ],
     'Gentle': [
-      'there’s room to move softly',
+      'there\'s room to move softly',
       'there is room for a gentle pace',
       'nothing here needs pressure',
     ],
     'Restful': [
       'the day allows for rest to be present',
-      'this moment doesn’t require energy',
+      'this moment doesn\'t require energy',
       'the day makes space for rest',
     ],
     'Unhurried': [
@@ -977,33 +970,33 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
       'the pace can stay loose',
     ],
     'Clear': [
-      'what’s here is enough to see',
+      'what\'s here is enough to see',
       'the day is not asking to be sorted',
-      'there’s little standing in the way',
+      'there\'s little standing in the way',
     ],
     'Open': [
-      'there’s space without expectation',
+      'there\'s space without expectation',
       'nothing needs to be decided in this moment',
       'there is space without direction',
     ],
     'Warm': [
       'there is a quiet warmth present today',
       'the day carries a gentle human tone',
-      'there’s something kind in the air',
+      'there\'s something kind in the air',
     ],
     'Light': [
       'the day is not weighted with meaning',
       'this moment does not carry extra burden',
-      'there’s less weight to carry',
+      'there\'s less weight to carry',
     ],
     'Reflective': [
       'you can notice without deciding',
       'the day allows for observation',
-      'there’s room to observe quietly',
+      'there\'s room to observe quietly',
     ],
     'Holding': [
       'the day is being held as it unfolds',
-      'you don’t have to hold everything yourself',
+      'you don\'t have to hold everything yourself',
       'support exists around this moment',
     ],
   };
@@ -1027,12 +1020,12 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
 
   // Step 4D: Hold-the-day variants (FINAL · CANONICAL)
   static const List<String> _holdTheDayVariants = [
-    'you don’t need to carry this forward',
+    'you don\'t need to carry this forward',
     'nothing here requires anything from you now',
     'you can let this stand on its own',
     'this can be left exactly where it is',
     'your attention is free to move on',
-    'there’s nothing here you need to resolve',
+    'there\'s nothing here you need to resolve',
     'this does not ask anything further of you',
     'this can exist without needing anything from you',
     'your attention can rest elsewhere now',
@@ -1187,9 +1180,6 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     setState(() {
       isSampling = true;
       _readingWasRevealedAtSamplingStart = primaryReadingRevealed;
-      // Keep secondary UI from “arriving” while the atmosphere system is active.
-      _ctaReady = false;
-      _ctaRevealTimer?.cancel();
       if (!isPrimaryReading) {
         observationCredits -= nextObservationCost;
       }
@@ -1242,13 +1232,6 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     await _ensureHoldTheDayVariantAssigned();
     setState(() => isSampling = false);
 
-
-    // Reveal CTA only after the settle moment, giving time to process what's on screen.
-    _ctaRevealTimer = Timer(const Duration(milliseconds: 1500), () {
-      if (!mounted) return;
-      setState(() => _ctaReady = true);
-    });
-
     // Atmospheric field phase now handled via build and showAtmosphere.
   }
 
@@ -1272,9 +1255,9 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     }
 
     final primaryLabel = isSampling
-        ? 'settling…'
+        ? 'settling...'
         : !primaryReadingTakenToday
-        ? 'receive today’s reading'
+        ? 'receive today\'s reading'
         : canAffordObservation
         ? 'settle a little longer'
         : 'this is enough for today';
@@ -1296,9 +1279,12 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
 
           return Stack(
             children: [
+              // Background layer - decorative only, must not intercept taps
               Positioned.fill(
-                child: ColoredBox(
-                  color: Theme.of(context).scaffoldBackgroundColor,
+                child: IgnorePointer(
+                  child: ColoredBox(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                  ),
                 ),
               ),
               // AtmosphericField: baseline environment layer with temporary variance energy.
@@ -1393,10 +1379,10 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                         // Smooth discrete `tidelineSettled` steps to avoid any visible snapping
                         // when observation/settling state changes.
                         return TweenAnimationBuilder<double>(
-                      // Slower, softer convergence so “new settled value” arrives gently.
+                      // Slower, softer convergence so "new settled value" arrives gently.
                       duration: const Duration(milliseconds: 3000),
                       curve: Curves.easeInOut,
-                      // IMPORTANT: do not reset `begin` to 0 on rebuild; that creates a visible “jump”
+                      // IMPORTANT: do not reset `begin` to 0 on rebuild; that creates a visible "jump"
                       // when settling progresses. With `begin` omitted, Flutter animates from the
                       // current animated value to the new `end` smoothly.
                       tween: Tween<double>(end: tidelineSettled),
@@ -1455,7 +1441,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                     const Opacity(
                       opacity: 0.9,
                       child: Text(
-                        '🍀 Today’s Luck Index',
+                        '🍀 Today\'s Luck Index',
                         style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 20, // Micro bump for balance if needed
@@ -1473,7 +1459,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                           duration: const Duration(milliseconds: 260),
                           curve: Curves.easeOut,
                           // Prevent the *first* reveal from appearing while the primary action
-                          // is still in its "Settling…" state.
+                          // is still in its "Settling..." state.
                           opacity: primaryReadingRevealed
                               ? ((_readingWasRevealedAtSamplingStart || !isSampling) ? 1.0 : 0.0)
                               : 0.0,
@@ -1692,19 +1678,19 @@ class _TidelinePainter extends CustomPainter {
     final bool canMove = enabled && !reduceMotion;
 
     final double s = settled.clamp(0.0, 1.0);
-    // Keep amplitude very small; this should never read as “waves”.
+    // Keep amplitude very small; this should never read as "waves".
     // Increased initial amplitude for clearer lively waves early in the day
     final double ampBase = size.height * 0.18; // was 0.075; now visibly higher
     // Adjusted 'settled' decay curve: blend amplitude from lively to very calm, with a slower drop-off, noticeable for each additional settling step
     final double ampRaw = canMove
         ? lerpDouble(ampBase.toDouble(), (ampBase * 0.04).toDouble(), pow(s.toDouble(), 1.35).toDouble())! // decay slower, but finish soft
         : 0.0;
-    // Gate ramps motion in gently at anchor completion (no visible “start”).
+    // Gate ramps motion in gently at anchor completion (no visible "start").
     final double g = gate.clamp(0.0, 1.0);
-    final double gateEase = pow(g, 2.6).toDouble(); // stays near 0 longer (no “pop”)
+    final double gateEase = pow(g, 2.6).toDouble(); // stays near 0 longer (no "pop")
     final double amp = ampRaw * gateEase;
 
-    // Use a multi-frequency blend to avoid a “single looping wave” feel.
+    // Use a multi-frequency blend to avoid a "single looping wave" feel.
     final double t = (time * 2 * pi);
     final double y0 = size.height * 0.35;
 
@@ -1814,7 +1800,7 @@ class _AtmosphericFieldPainter extends CustomPainter {
     final double jitter = lerpDouble(0.0, 14.0, v)!;
     final double radiusBase = lerpDouble(175.0, 250.0, v)!;
 
-    // Noise "clock" (irregular but smooth): about 0.6–0.9s per segment.
+    // Noise "clock" (irregular but smooth): about 0.6-0.9s per segment.
     final double rate = 1.25 + (hint * 0.0); // hint intentionally not used as frequency
     final double clock = t * rate;
     final int k0 = (reduceMotion || calmPresence) ? 0 : clock.floor();
@@ -1843,7 +1829,7 @@ class _AtmosphericFieldPainter extends CustomPainter {
       final double normalizedY = (center.dy / (size.height != 0 ? size.height : 1)).clamp(0.0, 1.0);
       final double downwardBias = 0.93 + 0.07 * pow(normalizedY, 2); // 1.0 at bottom, ~0.93 at top, continuous/quadratic
 
-      // Baseline → variance blend based on variance amplitude (no saturation spikes).
+      // Baseline -> variance blend based on variance amplitude (no saturation spikes).
       paint.color = Color.lerp(this.baselineColor, this.varianceColor, v.clamp(0.0, 1.0))!
           .withOpacity(a * downwardBias * (0.58 + 0.30 * turb));
       canvas.drawCircle(center, r, paint);
