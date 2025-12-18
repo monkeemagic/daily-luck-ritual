@@ -54,9 +54,9 @@ final _themePalettes = {
     'tidelineText': Color(0xFF4A4A48),
   },
   kThemeForest: {
-    'primaryButton': Color(0x594CB866), // 35% opacity for calm match with other themes
+    'primaryButton': Color(0x454CB866), // 27% opacity, softer visual weight
     'primaryButtonText': Color(0xFF4A4A48),
-    'ctaButton': Color(0x304CB866), // low-opacity match of primaryButton
+    'ctaButton': Color(0xA64CB866), // 65% opacity of Forest primary hue
     'ctaBorder': Color(0xFFA8B6A6),    // muted olive edge
     'tidelineTop': Color(0x3E4CB866), // 24% of Forest hue
     'tidelineBottom': Color(0x1B4CB866), // 11% of Forest hue
@@ -65,7 +65,7 @@ final _themePalettes = {
   kThemeAutumn: {
     'primaryButton': Color(0xFFF6E3CB), // Soft muted cream/amber
     'primaryButtonText': Color(0xFF4A4A48),
-    'ctaButton': Color(0x30FFD34D), // low-opacity match of primaryButton
+    'ctaButton': Color(0xA6FFD34D), // 65% opacity of Autumn primary hue
     'ctaBorder': Color(0xFFC3B5A3),    // Beige-tan edge
     'tidelineTop': Color(0x3EFFD34D), // 24% of Autumn hue
     'tidelineBottom': Color(0x1BFFD34D), // 11% of Autumn hue
