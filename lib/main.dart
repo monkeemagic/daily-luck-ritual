@@ -38,79 +38,6 @@ class DailyRitualApp extends StatelessWidget {
       ),
       home: const AtmosphereScreen(),
     );
-    void openAudioSheet() {
-      if (_soundMasterEnabled && _sfxEnabled) {
-        unawaited(SoundManager.instance.playTap());
-      }
-      showModalBottomSheet(
-        context: context,
-        backgroundColor: const Color(0xFFFAF8F0),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-        ),
-        builder: (_) {
-          return SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 22),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Text(
-                      'settings',
-                      style: const TextStyle(
-                        fontSize: 21,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF4A4A48),
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  const Divider(height: 1, color: Color(0xFFDBD7CC)),
-                  const SizedBox(height: 18),
-                  const Text(
-                    'sound',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF4A4A48),
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  const Divider(height: 1, color: Color(0xFFDBD7CC)),
-                  const SizedBox(height: 18),
-                  const Text(
-                    'themes',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF4A4A48),
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  const Divider(height: 1, color: Color(0xFFDBD7CC)),
-                  const SizedBox(height: 18),
-                  const Text(
-                    'about',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF4A4A48),
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-    }
   }
 }
 
@@ -156,6 +83,146 @@ class AtmosphereScreen extends StatefulWidget {
 class _AtmosphereScreenState extends State<AtmosphereScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   // ========================================
+  // 🔊 SOUND CONTROL STATE
+  // ========================================
+  bool _soundMasterEnabled = true;
+  bool _ambienceEnabled = true;
+  bool _sfxEnabled = true;
+  double _ambienceVolume = 0.3;
+  double _sfxVolume = 0.4;
+
+  // ========================================
+  // 🔊 SETTINGS MODAL (with SOUND CONTROLS)
+  // ========================================
+  Widget buildSettingsModal(BuildContext context) {
+    final palette = _themePalettes[(kDebugMode ? _devThemeValue : _userThemeValue)] ?? _themePalettes[kThemeOcean]!;
+    return Padding(
+      padding: const EdgeInsets.only(
+        top: 18,
+        left: 16,
+        right: 16,
+        bottom: 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Settings',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: palette['primaryButtonText'] ?? const Color(0xFF4A4A48),
+            ),
+          ),
+          const SizedBox(height: 16),
+          StatefulBuilder(
+            builder: (context, setModalState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SwitchListTile(
+                    value: _soundMasterEnabled,
+                    title: const Text('Sound (Master switch)', style: TextStyle(fontSize: 16)),
+                    activeColor: palette['primaryButton'] ?? const Color(0xFFA3D5D3),
+                    onChanged: (val) {
+                      setState(() {
+                        _soundMasterEnabled = val;
+                        if (!val) {
+                          SoundManager.instance.stopAll();
+                        } else if (_ambienceEnabled) {
+                          SoundManager.instance.startAmbient();
+                        }
+                      });
+                      setModalState(() {});
+                    },
+                  ),
+                  SwitchListTile(
+                    value: _ambienceEnabled,
+                    title: const Text('Ambient sound', style: TextStyle(fontSize: 16)),
+                    activeColor: palette['primaryButton'] ?? const Color(0xFFA3D5D3),
+                    onChanged: _soundMasterEnabled
+                        ? (val) {
+                            setState(() {
+                              _ambienceEnabled = val;
+                              if (val && _soundMasterEnabled) {
+                                SoundManager.instance.startAmbient();
+                              } else {
+                                SoundManager.instance.stopAmbient();
+                              }
+                            });
+                            setModalState(() {});
+                          }
+                        : null,
+                  ),
+                  SwitchListTile(
+                    value: _sfxEnabled,
+                    title: const Text('Button tap sound', style: TextStyle(fontSize: 16)),
+                    activeColor: palette['primaryButton'] ?? const Color(0xFFA3D5D3),
+                    onChanged: _soundMasterEnabled
+                        ? (val) {
+                            setState(() {
+                              _sfxEnabled = val;
+                            });
+                            setModalState(() {});
+                          }
+                        : null,
+                  ),
+                  ListTile(
+                    title: const Text('Ambient volume', style: TextStyle(fontSize: 15)),
+                    subtitle: Slider(
+                      value: _ambienceVolume,
+                      min: 0,
+                      max: 1,
+                      onChanged: _soundMasterEnabled && _ambienceEnabled
+                          ? (v) {
+                              setModalState(() {
+                                _ambienceVolume = v;
+                              });
+                            }
+                          : null,
+                      onChangeEnd: _soundMasterEnabled && _ambienceEnabled
+                          ? (v) {
+                              setState(() {
+                                _ambienceVolume = v;
+                                SoundManager.instance.setAmbientVolume(v);
+                              });
+                            }
+                          : null,
+                    ),
+                  ),
+                  ListTile(
+                    title: const Text('Button tap volume', style: TextStyle(fontSize: 15)),
+                    subtitle: Slider(
+                      value: _sfxVolume,
+                      min: 0,
+                      max: 1,
+                      onChanged: _soundMasterEnabled && _sfxEnabled
+                          ? (v) {
+                              setModalState(() {
+                                _sfxVolume = v;
+                              });
+                            }
+                          : null,
+                      onChangeEnd: _soundMasterEnabled && _sfxEnabled
+                          ? (v) {
+                              setState(() {
+                                _sfxVolume = v;
+                                SoundManager.instance.setSfxVolume(v);
+                              });
+                            }
+                          : null,
+                    ),
+                  ),
+                ],
+              );
+            }
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ========================================
   // 🍀 CORE STATE
   // ========================================
   double luckIndex = 50.0;
@@ -166,6 +233,9 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
   int _devThemeIndex = 0; // 0=ocean, 1=forest, 2=autumn
   // User-selected theme for release/non-debug (persisted, replace with prefs if needed)
   String _userThemeValue = kThemeOcean;
+
+  // ... keep only one set of sound state variables: remove this duplicate block ...
+  // (REMOVED: duplicate sound state variables here)
 
   String get _devThemeValue {
     final themes = [
@@ -219,13 +289,6 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
   String? dailyReflection; // Step 4: Optional reflection text
   int? holdTheDayVariantId; // Step 4D: chosen once when day becomes complete (0..9)
   // Minimal audio controls (ambient + tap SFX). No theme switching.
-  bool _soundMasterEnabled = true;
-  bool _ambienceEnabled = true;
-  bool _musicEnabled = false; // legacy UI only; no music layer exists
-  bool _sfxEnabled = true;
-  double _ambienceVolume = 0.3; // legacy UI only
-  double _musicVolume = 0.0; // legacy UI only
-  double _sfxVolume = 0.4; // legacy UI only
   bool _holdSfxPlayed = false;
 
   // Cached measurement to reserve stable space for reflection/hold-the-day text
@@ -1233,7 +1296,17 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                   child: IconButton(
                     visualDensity: VisualDensity.compact,
                     iconSize: 18,
-                    onPressed: openAudioSheet,
+                    onPressed: () {
+                      // Directly open the settings modal (now contains sound controls)
+                      showModalBottomSheet(
+                        context: context,
+                        backgroundColor: const Color(0xFFFAF8F0),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+                        ),
+                        builder: (_) => this.buildSettingsModal(context),
+                      );
+                    },
                     icon: Icon(
                       Icons.settings,
                       color: const Color(0xFF4A4A48).withOpacity(0.72),
