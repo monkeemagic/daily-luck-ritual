@@ -1353,47 +1353,50 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                     const SizedBox(height: 32),
                     SizedBox(
                       height: _meaningBlockHeight(context),
-                      child: _showReflection
-                          ? Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
-                              child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 250),
-                                switchInCurve: Curves.easeOut,
-                                switchOutCurve: Curves.easeOut,
-                                transitionBuilder: (child, anim) =>
-                                    FadeTransition(opacity: anim, child: child),
-                                child: !primaryReadingTakenToday
+                      child: AnimatedOpacity(
+                        opacity: _showReflection ? 1.0 : 0.0,
+                        duration: const Duration(milliseconds: 260),
+                        curve: Curves.easeOut,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 250),
+                            switchInCurve: Curves.easeOut,
+                            switchOutCurve: Curves.easeOut,
+                            transitionBuilder: (child, anim) =>
+                                FadeTransition(opacity: anim, child: child),
+                            child: !primaryReadingTakenToday
+                                ? Text(
+                                    _preAnchorAccessCopy,
+                                    key: ValueKey<String>('pre_anchor_${_preAnchorAccessCopy}'),
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Color(0xFF474442),
+                                      height: 1.5,
+                                      letterSpacing: 0.3,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  )
+                                : (primaryReadingRevealed && (dailyReflection != null || isDayComplete))
                                     ? Text(
-                                        _preAnchorAccessCopy,
-                                        key: ValueKey<String>('pre_anchor_${_preAnchorAccessCopy}'),
+                                        isDayComplete ? holdTheDayTextForToday : dailyReflection!,
+                                        key: ValueKey<String>(
+                                          isDayComplete ? 'hold_${holdTheDayVariantId ?? 0}' : 'reflection',
+                                        ),
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
-                                          fontSize: 14,
-                                          color: Color(0xFF474442),      // Match body text
-                                          height: 1.5,
-                                          letterSpacing: 0.3,            // Slight increase
-                                          fontWeight: FontWeight.w500,   // Slightly bolder
+                                          fontSize: 18,
+                                          color: Color(0xFF474442),
+                                          height: 1.6,
+                                          letterSpacing: 0.4,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       )
-                                    : (primaryReadingRevealed && (dailyReflection != null || isDayComplete))
-                                        ? Text(
-                                            isDayComplete ? holdTheDayTextForToday : dailyReflection!,
-                                            key: ValueKey<String>(
-                                              isDayComplete ? 'hold_${holdTheDayVariantId ?? 0}' : 'reflection',
-                                            ),
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              fontSize: 18,
-                                              color: Color(0xFF474442),      // Softer, grounded charcoal
-                                              height: 1.6,
-                                              letterSpacing: 0.4,            // Light increase for structure
-                                              fontWeight: FontWeight.w500,   // Slightly bolder for clarity
-                                            ),
-                                          )
-                                        : const SizedBox.shrink(key: ValueKey<String>('secondary_empty')),
-                              ),
-                            )
-                          : const SizedBox.shrink(),
+                                    : const SizedBox.shrink(key: ValueKey<String>('secondary_empty')),
+                          ),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 40),
                     // Keep the primary button visually steady; the atmospheric system is the star.
@@ -1503,7 +1506,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                                   child: Text(
                                     'pause briefly',
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 15,
                                       color: palette['primaryButtonText'] ?? Color(0xFF4A4A48),
                                       letterSpacing: 0.3,
                                       fontWeight: FontWeight.w400,

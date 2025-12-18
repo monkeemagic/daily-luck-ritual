@@ -1,4 +1,5 @@
 import 'package:just_audio/just_audio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SoundManager {
@@ -59,7 +60,12 @@ class SoundManager {
       await _ambientPlayer.setLoopMode(LoopMode.one);
       await _ambientPlayer.setVolume(_effectiveAmbientVolume);
       await _ambientPlayer.play();
-    } catch (_) {}
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('SoundManager.startAmbient failed: $e');
+        debugPrintStack(stackTrace: st);
+      }
+    }
   }
 
   Future<void> stopAmbient() async {
@@ -76,7 +82,12 @@ class SoundManager {
       await _sfxPlayer.setAsset('assets/audio/sfx/ui_tap_soft.wav');
       await _sfxPlayer.setVolume(_sfxVolume);
       await _sfxPlayer.play();
-    } catch (_) {}
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('SoundManager.playTap failed: $e');
+        debugPrintStack(stackTrace: st);
+      }
+    }
   }
 
   /// Sets the ambient audio volume (clamped between 0.0 and 1.0) and updates the active ambient player immediately.
