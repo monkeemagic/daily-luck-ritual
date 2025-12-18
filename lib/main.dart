@@ -47,7 +47,7 @@ final _themePalettes = {
   kThemeOcean: {
     'primaryButton': Color(0xFFA3D5D3), // Aqua blue-green
     'primaryButtonText': Color(0xFF4A4A48),
-    'ctaButton': Color(0x30A3D5D3), // low-opacity match of primaryButton
+    'ctaButton': Color(0xB8A3D5D3), // increase to 72% opacity for Ocean
     'ctaBorder': Color(0xFF8FAFB3), // Muted mist blue. Harmonizes with ocean variance field and avoids green
     'tidelineTop': Color(0x3E23C0E8), // 24% of Ocean's theme hue
     'tidelineBottom': Color(0x1B23C0E8), // 11% of Ocean's hue
@@ -56,7 +56,7 @@ final _themePalettes = {
   kThemeForest: {
     'primaryButton': Color(0x454CB866), // 27% opacity, softer visual weight
     'primaryButtonText': Color(0xFF4A4A48),
-    'ctaButton': Color(0xA64CB866), // 65% opacity of Forest primary hue
+    'ctaButton': Color(0xCC4CB866), // increase to 80% opacity for Forest
     'ctaBorder': Color(0xFFA8B6A6),    // muted olive edge
     'tidelineTop': Color(0x3E4CB866), // 24% of Forest hue
     'tidelineBottom': Color(0x1B4CB866), // 11% of Forest hue
@@ -65,7 +65,7 @@ final _themePalettes = {
   kThemeAutumn: {
     'primaryButton': Color(0xFFF6E3CB), // Soft muted cream/amber
     'primaryButtonText': Color(0xFF4A4A48),
-    'ctaButton': Color(0xA6FFD34D), // 65% opacity of Autumn primary hue
+    'ctaButton': Color(0xCCFFD34D), // increase to 80% opacity for Autumn
     'ctaBorder': Color(0xFFC3B5A3),    // Beige-tan edge
     'tidelineTop': Color(0x3EFFD34D), // 24% of Autumn hue
     'tidelineBottom': Color(0x1BFFD34D), // 11% of Autumn hue
@@ -1009,7 +1009,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
         ? 'receive today’s reading'
         : canAffordObservation
         ? 'settle a little longer'
-        : 'this is enough for today.';
+        : 'this is enough for today';
     final bool isEnoughLabel = primaryReadingTakenToday && !canAffordObservation;
     final String holdTheDayTextForToday =
         _getHoldTheDayText(holdTheDayVariantId ?? 0);
@@ -1467,7 +1467,9 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                       height: 32,
                       child: showCta
                           ? Opacity(
-                              opacity: ctaOpacity,
+                              opacity: isDayComplete
+                                  ? 0.18 // visually softer than disabled primary button
+                                  : ctaOpacity,
                               child: TextButton(
                                 onPressed: canShowAd && rewardedAd != null
                                     ? () {
