@@ -296,12 +296,12 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                     ),
                     const SizedBox(height: 4),
                     const Text(
-                      'daily luck ritual was made as a quiet space to pause.\n\n'
-                      'it doesn’t predict outcomes or tell you who to be.\n'
-                      'it simply reflects a brief moment, once per day.\n\n'
-                      'there are no streaks, no pressure, and nothing to keep up with.\n\n'
-                      'if it helps you slow down, that’s enough.\n\n'
-                      'this app is made independently and kept intentionally simple.',
+                      'daily luck ritual was made as a quiet space to pause\n\n'
+                      'it doesn’t predict outcomes or tell you who to be\n'
+                      'it simply reflects a brief moment, once per day\n\n'
+                      'there are no streaks, no pressure, and nothing to keep up with\n\n'
+                      'if it helps you slow down, that’s enough\n\n'
+                      'this app is made independently and kept intentionally simple',
                       textAlign: TextAlign.left,
                       style: TextStyle(
                         fontSize: 15,
@@ -327,9 +327,9 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 8),
                       child: const Text(
-                        'this project is maintained and nurtured over time.\n'
+                        'this project is maintained and nurtured over time\n'
                         'your contributions enable development,\n'
-                        'infrastructure, and future improvements.\n'
+                        'infrastructure, and future improvements\n'
                         'your daily ritual will always be free\n',
                         textAlign: TextAlign.left,
                         style: TextStyle(
@@ -1444,11 +1444,8 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                 right: 16,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFAF8F0).withOpacity(0.75),
+                    color: Colors.transparent,
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: const Color(0xFF4A4A48).withOpacity(0.12),
-                    ),
                   ),
                   child: IconButton(
                     visualDensity: VisualDensity.compact,
