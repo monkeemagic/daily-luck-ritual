@@ -7,17 +7,18 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'sound_manager.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:daily_luck_ritual/iap/iap_service.dart';
+import '../iap/iap_constants.dart';
 
 /// ========================================
 /// APP VERSION
 /// ========================================
 const String kAppVersion = '3.10.4';
 const String kThemeOcean = 'ocean';
-const String kThemeForest = 'forest';
-const String kThemeAutumn = 'autumn';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await IapService.instance.initialize();
   await MobileAds.instance.initialize();
   runApp(const DailyRitualApp());
 }
@@ -82,6 +83,11 @@ class AtmosphereScreen extends StatefulWidget {
 
 class _AtmosphereScreenState extends State<AtmosphereScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
+  // Expose IAP ownership for Forest and Autumn theme unlocking
+  bool get _forestUnlocked => IapService.instance.owns(kThemeForest);
+  bool get _autumnUnlocked => IapService.instance.owns(kThemeAutumn);
+  // Ocean theme is always unlocked
+
   // ========================================
   // 🔊 SOUND CONTROL STATE
   // ========================================
@@ -216,7 +222,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                     ),
                     const SizedBox(height: 22),
                     const Text(
-                      'About',
+                      'about',
                       style: TextStyle(
                         fontSize: 17,
                         color: Color(0xFF4A4A48),

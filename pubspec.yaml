@@ -11,6 +11,8 @@ dependencies:
   flutter:
     sdk: flutter
 
+  in_app_purchase: ^3.1.13
+
   # Core UI
   cupertino_icons: ^1.0.8
 
