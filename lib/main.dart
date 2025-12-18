@@ -694,7 +694,13 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
         });
       });
       if (_soundMasterEnabled && _ambienceEnabled) {
-        SoundManager.instance.startAmbient().then((_) {
+        SoundManager.instance.startAmbient().catchError((_) {
+          // Single safe retry on Source error (real device audio init race)
+          if (_soundMasterEnabled && _ambienceEnabled) {
+            return SoundManager.instance.startAmbient();
+          }
+          return Future<void>.value();
+        }).then((_) {
           setState(() {
             _ambienceVolume = SoundManager.instance.ambientVolume;
           });

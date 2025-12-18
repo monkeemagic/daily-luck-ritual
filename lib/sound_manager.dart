@@ -49,11 +49,13 @@ class SoundManager {
   }
 
   Future<void> startAmbient() async {
+    // Guard: do nothing if already starting or playing
+    if (_ambientStarted || _ambientPlayer.playing) return;
+    _ambientStarted = true;
+
     // Always ensure up-to-date before playback.
     _initVolumeFut ??= ensureVolumesLoaded();
     await _initVolumeFut;
-    if (_ambientStarted) return;
-    _ambientStarted = true;
 
     try {
       await _ambientPlayer.setAsset('assets/audio/ambience/ocean_ambient.wav');
