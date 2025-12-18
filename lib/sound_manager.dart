@@ -10,7 +10,12 @@ class SoundManager {
   final AudioPlayer _sfxPlayer = AudioPlayer();
 
   bool _ambientStarted = false;
-  double _ambientVolume = 0.6;
+  // Slider-facing volumes (0.0..1.0).
+  double _ambientVolume = 0.3;
+  double _sfxVolume = 0.4;
+
+  double get _effectiveAmbientVolume =>
+      (_ambientVolume * _ambientVolume) * _maxAmbientVolume;
 
   Future<void> startAmbient() async {
     if (_ambientStarted) return;
@@ -19,7 +24,7 @@ class SoundManager {
     try {
       await _ambientPlayer.setAsset('assets/audio/ambience/ocean_ambient.wav');
       await _ambientPlayer.setLoopMode(LoopMode.one);
-      await _ambientPlayer.setVolume(_ambientVolume);
+      await _ambientPlayer.setVolume(_effectiveAmbientVolume);
       await _ambientPlayer.play();
     } catch (_) {}
   }
@@ -34,7 +39,7 @@ class SoundManager {
   Future<void> playTap() async {
     try {
       await _sfxPlayer.setAsset('assets/audio/sfx/ui_tap_soft.wav');
-      await _sfxPlayer.setVolume(0.8);
+      await _sfxPlayer.setVolume(_sfxVolume);
       await _sfxPlayer.play();
     } catch (_) {}
   }
@@ -42,10 +47,16 @@ class SoundManager {
   /// Sets the ambient audio volume (clamped between 0.0 and 1.0) and updates the active ambient player immediately.
   void setAmbientVolume(double volume) {
     final clamped = volume.clamp(0.0, 1.0);
-    _ambientVolume = (clamped * clamped) * _maxAmbientVolume;
-    _ambientPlayer.setVolume(_ambientVolume);
+    _ambientVolume = clamped;
+    _ambientPlayer.setVolume(_effectiveAmbientVolume);
   }
 
+  /// Sets the SFX audio volume (clamped between 0.0 and 1.0) and updates the active SFX player immediately.
+  void setSfxVolume(double volume) {
+    final clamped = volume.clamp(0.0, 1.0);
+    _sfxVolume = clamped;
+    _sfxPlayer.setVolume(_sfxVolume);
+  }
 
   Future<void> dispose() async {
     await _ambientPlayer.dispose();
