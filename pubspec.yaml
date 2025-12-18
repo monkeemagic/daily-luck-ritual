@@ -1,0 +1,38 @@
+name: daily_luck_ritual
+description: "Daily Luck Ritual — a calm, nature-themed daily moment."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Core UI
+  cupertino_icons: ^1.0.8
+
+  # State & persistence
+  shared_preferences: ^2.2.3
+
+  # Audio (ambient + ritual sounds)
+  just_audio: ^0.9.46
+  audio_session: ^0.1.25
+
+  # Monetization (rewarded ads)
+  google_mobile_ads: ^5.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/audio/ambience/
+    - assets/audio/sfx/
