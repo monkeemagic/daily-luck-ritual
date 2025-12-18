@@ -34,4 +34,19 @@ class IapService {
   bool owns(String productId) {
     return ownedProductIds.contains(productId);
   }
+
+  Future<void> buy(String productId) async {
+    final ProductDetailsResponse response =
+    await _iap.queryProductDetails({productId});
+
+    if (response.productDetails.isEmpty) return;
+
+    final ProductDetails productDetails =
+        response.productDetails.first;
+
+    final PurchaseParam purchaseParam =
+    PurchaseParam(productDetails: productDetails);
+
+    _iap.buyNonConsumable(purchaseParam: purchaseParam);
+  }
 }

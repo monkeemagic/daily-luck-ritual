@@ -220,6 +220,68 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                             : null,
                       ),
                     ),
+                    const SizedBox(height: 26),
+                    Text('themes', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: palette['primaryButtonText'] ?? Color(0xFF4A4A48))),
+                    const SizedBox(height: 12),
+                    ListTile(
+                      title: Text('ocean'),
+                      subtitle: Text('applied', style: TextStyle(fontSize: 15, color: Color(0xFF4A4A48))),
+                      onTap: () { setState(() { _userThemeValue = kThemeOcean; }); },
+                    ),
+                    GestureDetector(
+                      onTap: () async {
+                        if (_forestUnlocked) {
+                          setState(() { _userThemeValue = kThemeForest; });
+                        } else {
+                          await IapService.instance.buy(kThemeForest);
+                        }
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('forest'),
+                                  Text(_forestUnlocked && _userThemeValue == kThemeForest ? 'applied' : 'available', style: TextStyle(fontSize: 15, color: Color(0xFF4A4A48))),
+                                ],
+                              ),
+                            ),
+                            Icon(Icons.chevron_right, size: 16, color: Color(0xFF222222).withOpacity(0.62)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () async {
+                        if (_autumnUnlocked) {
+                          setState(() { _userThemeValue = kThemeAutumn; });
+                        } else {
+                          await IapService.instance.buy(kThemeAutumn);
+                        }
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('autumn'),
+                                  Text(_autumnUnlocked && _userThemeValue == kThemeAutumn ? 'applied' : 'available', style: TextStyle(fontSize: 15, color: Color(0xFF4A4A48))),
+                                ],
+                              ),
+                            ),
+                            Icon(Icons.chevron_right, size: 16, color: Color(0xFF222222).withOpacity(0.62)),
+                          ],
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 22),
                     const Text(
                       'about',
@@ -234,12 +296,12 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                     ),
                     const SizedBox(height: 4),
                     const Text(
-                      'daily luck ritual was made as a quiet space to pause.'
-                          '\n\nit doesn’t predict outcomes or tell you who to be.'
-                          '\nit simply reflects a moment, once per day.'
-                          '\n\nthere are no streaks, no pressure, and nothing to keep up with.'
-                          '\n\nif it helps you slow down, that’s enough.'
-                          '\n\n',
+                      'daily luck ritual was made as a quiet space to pause.\n\n'
+                      'it doesn’t predict outcomes or tell you who to be.\n'
+                      'it simply reflects a brief moment, once per day.\n\n'
+                      'there are no streaks, no pressure, and nothing to keep up with.\n\n'
+                      'if it helps you slow down, that’s enough.\n\n'
+                      'this app is made independently and kept intentionally simple.',
                       textAlign: TextAlign.left,
                       style: TextStyle(
                         fontSize: 15,
@@ -251,7 +313,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                     ),
                     const SizedBox(height: 20),
                     const Text(
-                      'support',
+                      'thank you',
                       style: TextStyle(
                         fontSize: 17,
                         color: Color(0xFF4A4A48),
@@ -262,92 +324,47 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                       textAlign: TextAlign.left,
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'this app is made independently and kept intentionally simple.',
-                      textAlign: TextAlign.left,
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Color(0xFF4A4A48),
-                        height: 1.55,
-                        fontWeight: FontWeight.w400,
-                        letterSpacing: 0,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ListTile(
-                      title: Text(
-                        'help sustain this project',
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: const Text(
+                        'this project is maintained and nurtured over time.\n'
+                        'your contributions enable development,\n'
+                        'infrastructure, and future improvements.\n'
+                        'your daily ritual will always be free\n',
+                        textAlign: TextAlign.left,
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           color: Color(0xFF4A4A48),
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.05,
+                          height: 1.55,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: 0,
                         ),
                       ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 2),
-                      enabled: true,
-                      onTap: () {
-                        showModalBottomSheet(
-                          context: context,
-                          backgroundColor: const Color(0xFFFAF8F0),
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-                          ),
-                          builder: (_) => SafeArea(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 22),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Center(
-                                    child: Text(
-                                      'thank you',
-                                      style: TextStyle(
-                                        fontSize: 21,
-                                        fontWeight: FontWeight.w500,
-                                        color: Color(0xFF4A4A48),
-                                        letterSpacing: 0.3,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 18),
-                                  const Text(
-                                    'daily luck ritual is maintained and nurtured over time.'
-                                        '\n\nyour contributions enable development,'
-                                        '\ninfrastructure, and future improvements.'
-                                        '\n\nyour daily ritual is always free and unchanged.'
-                                        '\n',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color: Color(0xFF4A4A48),
-                                      height: 1.55,
-                                      fontWeight: FontWeight.w400,
-                                      letterSpacing: 0,
-                                    ),
-                                    textAlign: TextAlign.left,
-                                  ),
-                                  const SizedBox(height: 18),
-                                  ListTile(
-                                    title: Text(
-                                      'unlock themes / show appreciation',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Color(0xFF4A4A48),
-                                        fontWeight: FontWeight.w500,
-                                        letterSpacing: 0.05,
-                                      ),
-                                    ),
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 2),
-                                    enabled: false,
-                                    onTap: null, // stub/no logic
-                                  ),
-                                ],
+                    ),
+                    GestureDetector(
+                      onTap: () async {
+                        await IapService.instance.buy(kSupportProject);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'show appreciation',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Color(0xFF4A4A48),
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: 0.05,
+                                ),
                               ),
                             ),
-                          ),
-                        );
-                      },
+                            Icon(Icons.chevron_right, size: 16, color: Color(0xFF222222).withOpacity(0.62)),
+                          ],
+                        ),
+                      ),
                     ),
 
 
