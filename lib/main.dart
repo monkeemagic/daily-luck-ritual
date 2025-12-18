@@ -91,6 +91,8 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
   // int _atmosphericHazePersistEpoch = 0; // removed: unused
   // DEV-only theme override (session-only; never persisted)
   int _devThemeIndex = 0; // 0=ocean, 1=forest, 2=autumn
+  // User-selected theme for release/non-debug (persisted, replace with prefs if needed)
+  String _userThemeValue = kThemeOcean;
 
   String get _devThemeValue {
     final themes = [
@@ -1159,12 +1161,8 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     return Scaffold(
       body: Builder(
         builder: (context) {
-          final themeForVisuals =
-              kDebugMode ? _devThemeValue : kThemeOcean;
-          final Map<String, Color> palette =
-            _themePalettes[themeForVisuals] != null
-              ? _themePalettes[themeForVisuals]!.cast<String, Color>()
-              : _themePalettes[kThemeOcean]!.cast<String, Color>();
+          // 🔥 Remove anchor/day gating from tideline palette selection
+          final Map<String, Color> palette = _themePalettes[(kDebugMode ? _devThemeValue : _userThemeValue)] ?? _themePalettes[kThemeOcean]!;
 
           return Stack(
             children: [
@@ -1188,10 +1186,10 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                         builder: (context, t, _) {
                           final Color baselineColor;
                           final Color varianceColor;
-                          if (themeForVisuals == kThemeForest) {
+                          if ((kDebugMode ? _devThemeValue : _userThemeValue) == kThemeForest) {
                             baselineColor = const Color(0xFFD2DAD4); // muted grey-green
                             varianceColor = const Color(0xFF93ABA0); // low-chroma green-grey
-                          } else if (themeForVisuals == kThemeAutumn) {
+                          } else if ((kDebugMode ? _devThemeValue : _userThemeValue) == kThemeAutumn) {
                             baselineColor = const Color(0xFFDED7CF); // muted warm grey
                             varianceColor = const Color(0xFFA8A094); // low-chroma warm-grey
                           } else {
@@ -1492,10 +1490,10 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                                     // Lighten CTA pill background for Forest and Autumn by alpha blending with atmosphere baseline
                                     color: () {
                                       final cta = (palette['ctaButton'] ?? Color(0xFFA3D5D3)).withOpacity(0.92);
-                                      if (themeForVisuals == kThemeForest) {
+                                      if ((kDebugMode ? _devThemeValue : _userThemeValue) == kThemeForest) {
                                         final base = Color(0xFFD2DAD4); // atmospheric baseline for Forest
                                         return Color.alphaBlend(base.withOpacity(0.45), cta);
-                                      } else if (themeForVisuals == kThemeAutumn) {
+                                      } else if ((kDebugMode ? _devThemeValue : _userThemeValue) == kThemeAutumn) {
                                         final base = Color(0xFFDED7CF); // atmospheric baseline for Autumn
                                         return Color.alphaBlend(base.withOpacity(0.45), cta);
                                       } else {
@@ -1619,7 +1617,10 @@ class _TidelinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _TidelinePainter oldDelegate) {
-    return oldDelegate.time != time ||
+    // Gate removed: tideline color must be a pure function of the active theme (palette),
+    // so a theme change must trigger repaint even if animation/time hasn't advanced yet.
+    return oldDelegate.palette != palette ||
+        oldDelegate.time != time ||
         oldDelegate.enabled != enabled ||
         oldDelegate.gate != gate ||
         oldDelegate.reduceMotion != reduceMotion ||
