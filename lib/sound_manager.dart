@@ -14,6 +14,8 @@ class SoundManager {
   final AudioPlayer _sfxPlayer = AudioPlayer();
 
   bool _ambientStarted = false;
+  // Fade cancellation token: incremented to abort any in-progress fade
+  int _ambientFadeToken = 0;
   // Slider-facing volumes (**restore to original defaults**)
   double _ambientVolume = 0.3;
   double _sfxVolume = 0.2;
@@ -60,6 +62,15 @@ class SoundManager {
     }
   }
 
+  // Fade-in configuration
+  static const double _fadeStartRatio = 0.3; // Start at 30% of target (audible)
+  static const int _fadeSteps = 15;
+  static const Duration _fadeDuration = Duration(milliseconds: 1200);
+
+  // Fade-out configuration
+  static const int _fadeOutSteps = 10;
+  static const Duration _fadeOutDuration = Duration(milliseconds: 600);
+
   Future<void> startAmbient() async {
     debugPrint('>>> startAmbient CALLED');
     // Guard: do nothing if already starting or playing
@@ -70,14 +81,24 @@ class SoundManager {
     _initVolumeFut ??= ensureVolumesLoaded();
     await _initVolumeFut;
 
+    // Cancel any lingering fade (e.g. fade-out residue from ads) before restarting.
+    // This ensures we resync cleanly from the persisted slider value.
+    _ambientFadeToken++;
+
     try {
+      // Resync: derive target from authoritative _ambientVolume (slider source of truth)
+      final targetVol = _effectiveAmbientVolume;
+      final startVol = targetVol * _fadeStartRatio;
+
       // 1. Set asset first
       await _ambientPlayer.setAsset('assets/audio/ambience/ocean_ambient.wav');
       await _ambientPlayer.setLoopMode(LoopMode.one);
-      // 2. Set effective volume synchronously (before play)
-      await _ambientPlayer.setVolume(_effectiveAmbientVolume);
+      // 2. Explicitly set player volume from persisted slider value (clears fade-out residue)
+      await _ambientPlayer.setVolume(startVol);
       // 3. Then call play
       await _ambientPlayer.play();
+      // 4. Fire-and-forget fade to target volume (derived from slider)
+      _fadeAmbientTo(targetVol, startVol);
     } catch (e, st) {
       // Reset guard so subsequent calls can retry
       _ambientStarted = false;
@@ -85,6 +106,55 @@ class SoundManager {
         debugPrint('SoundManager.startAmbient failed: $e');
         debugPrintStack(stackTrace: st);
       }
+    }
+  }
+
+  /// Gently fades ambient volume from [fromVol] to [toVol].
+  /// Fire-and-forget; does not block caller.
+  /// Aborts if token changes (slider interaction) or playback stops.
+  void _fadeAmbientTo(double toVol, double fromVol) async {
+    // Increment and capture token for this fade
+    final int myToken = ++_ambientFadeToken;
+    final stepDelay = Duration(milliseconds: _fadeDuration.inMilliseconds ~/ _fadeSteps);
+    final volDelta = toVol - fromVol;
+
+    for (int i = 1; i <= _fadeSteps; i++) {
+      await Future.delayed(stepDelay);
+      // Abort if token changed (slider touched) or player stopped
+      if (_ambientFadeToken != myToken || !_ambientPlayer.playing) return;
+      final vol = fromVol + (volDelta * (i / _fadeSteps));
+      _ambientPlayer.setVolume(vol.clamp(0.0, 1.0));
+    }
+    // Ensure final target volume is set (only if still valid)
+    if (_ambientFadeToken == myToken) {
+      _ambientPlayer.setVolume(toVol.clamp(0.0, 1.0));
+    }
+  }
+
+  /// Gently fades ambient volume to zero over ~600ms.
+  /// Fire-and-forget; does NOT block lifecycle or ads.
+  /// Does NOT change user volume state (_ambientVolume).
+  /// Aborts if token changes or playback stops.
+  void fadeOutAmbient() async {
+    if (!_ambientPlayer.playing) return;
+
+    // Increment and capture token for this fade-out
+    final int myToken = ++_ambientFadeToken;
+    final double startVol = _ambientPlayer.volume;
+    if (startVol <= 0.0) return;
+
+    final stepDelay = Duration(milliseconds: _fadeOutDuration.inMilliseconds ~/ _fadeOutSteps);
+
+    for (int i = 1; i <= _fadeOutSteps; i++) {
+      await Future.delayed(stepDelay);
+      // Abort if token changed or player stopped
+      if (_ambientFadeToken != myToken || !_ambientPlayer.playing) return;
+      final vol = startVol * (1.0 - (i / _fadeOutSteps));
+      _ambientPlayer.setVolume(vol.clamp(0.0, 1.0));
+    }
+    // Ensure final volume is zero (only if still valid)
+    if (_ambientFadeToken == myToken) {
+      _ambientPlayer.setVolume(0.0);
     }
   }
 
@@ -98,9 +168,15 @@ class SoundManager {
   Future<void> playTap() async {
     _initVolumeFut ??= ensureVolumesLoaded();
     await _initVolumeFut;
+
     try {
       await _sfxPlayer.setAsset('assets/audio/sfx/ui_tap_soft.wav');
-      await _sfxPlayer.setVolume(_sfxVolume);
+
+      // Apply perceptual curve for short transient sounds
+      final double curvedVolume =
+      math.pow(_sfxVolume.clamp(0.0, 1.0), 1.6).toDouble();
+
+      await _sfxPlayer.setVolume(curvedVolume);
       await _sfxPlayer.play();
     } catch (e, st) {
       if (kDebugMode) {
@@ -110,8 +186,12 @@ class SoundManager {
     }
   }
 
+
   /// Sets the ambient audio volume (clamped between 0.0 and 1.0) and updates the active ambient player immediately.
+  /// Cancels any in-progress fade so slider becomes authoritative.
   void setAmbientVolume(double volume) {
+    // Cancel any in-progress fade immediately
+    _ambientFadeToken++;
     final clamped = volume.clamp(0.0, 1.0);
     _ambientVolume = clamped;
     _ambientPlayer.setVolume(_effectiveAmbientVolume);

@@ -691,25 +691,27 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.detached) {
-      SoundManager.instance.stopAll();
+      // Gentle fade-out for UX polish (fire-and-forget, non-blocking)
+      SoundManager.instance.fadeOutAmbient();
     }
     if (state == AppLifecycleState.resumed) {
+      debugPrint('>>> lifecycle resumed: starting ambient');
       SoundManager.instance.ensureVolumesLoaded().then((_) {
         setState(() {
           _ambienceVolume = SoundManager.instance.ambientVolume;
           _sfxVolume = SoundManager.instance.sfxVolume;
         });
       });
+      // Always attempt to restart ambient on resume (guards inside startAmbient handle duplicates)
       if (_soundMasterEnabled && _ambienceEnabled) {
-        SoundManager.instance.startAmbient().catchError((_) {
-          // Single safe retry on Source error (real device audio init race)
-          if (_soundMasterEnabled && _ambienceEnabled) {
-            return SoundManager.instance.startAmbient();
-          }
-          return Future<void>.value();
-        }).then((_) {
-          setState(() {
-            _ambienceVolume = SoundManager.instance.ambientVolume;
+        // Stop first to reset guard, then start fresh with fade-in
+        SoundManager.instance.stopAmbient().then((_) {
+          SoundManager.instance.startAmbient().catchError((_) {
+            // Single safe retry on Source error (real device audio init race)
+            if (_soundMasterEnabled && _ambienceEnabled) {
+              return SoundManager.instance.startAmbient();
+            }
+            return Future<void>.value();
           });
         });
       }
@@ -1149,6 +1151,25 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
       rewardedAdLoadCallback:
       RewardedAdLoadCallback(
         onAdLoaded: (ad) {
+          // Attach fullscreen callbacks for ambient audio control
+          ad.fullScreenContentCallback = FullScreenContentCallback(
+            onAdShowedFullScreenContent: (ad) {
+              debugPrint('>>> ad showed: stopping ambient');
+              SoundManager.instance.stopAmbient();
+            },
+            onAdDismissedFullScreenContent: (ad) {
+              debugPrint('>>> ad dismissed: starting ambient');
+              if (_soundMasterEnabled && _ambienceEnabled) {
+                SoundManager.instance.startAmbient();
+              }
+            },
+            onAdFailedToShowFullScreenContent: (ad, error) {
+              debugPrint('>>> ad failed to show: starting ambient');
+              if (_soundMasterEnabled && _ambienceEnabled) {
+                SoundManager.instance.startAmbient();
+              }
+            },
+          );
           rewardedAd = ad;
           isAdLoading = false;
         },
@@ -1163,6 +1184,9 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
 
   void showRewardedAd() {
     if (!canShowAd || rewardedAd == null) return;
+
+    // Gentle fade-out before ad starts (fire-and-forget, non-blocking)
+    SoundManager.instance.fadeOutAmbient();
 
     rewardedAd!.show(onUserEarnedReward: (_, __) async {
       setState(() {
@@ -1595,59 +1619,56 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                     const SizedBox(height: 8),
                     SizedBox(
                       height: 32,
-                      child: showCta
-                          ? Opacity(
-                              opacity: isDayComplete
-                                  ? 0.43 // visually softer than disabled primary button
-                                  : ctaOpacity,
-                              child: TextButton(
-                                onPressed: canShowAd && rewardedAd != null
-                                    ? () {
-                                        if (_soundMasterEnabled && _sfxEnabled) {
-                                          unawaited(SoundManager.instance.playTap());
-                                        }
-                                        showRewardedAd();
-                                      }
-                                    : null,
-                                style: TextButton.styleFrom(
-                                  padding: EdgeInsets.zero,
-                                ),
-                                // Keep CTA visually steady; only opacity changes via `ctaOpacity`.
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 5,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    // Lighten CTA pill background for Forest and Autumn by alpha blending with atmosphere baseline
-                                    color: () {
-                                      final cta = (palette['ctaButton'] ?? Color(0xFFA3D5D3)).withOpacity(0.92);
-                                      if ((kDebugMode ? _devThemeValue : _userThemeValue) == kThemeForest) {
-                                        final base = Color(0xFFD2DAD4); // atmospheric baseline for Forest
-                                        return Color.alphaBlend(base.withOpacity(0.45), cta);
-                                      } else if ((kDebugMode ? _devThemeValue : _userThemeValue) == kThemeAutumn) {
-                                        final base = Color(0xFFDED7CF); // atmospheric baseline for Autumn
-                                        return Color.alphaBlend(base.withOpacity(0.45), cta);
-                                      } else {
-                                        return cta; // Ocean = reference
-                                      }
-                                    }(),
-                                    borderRadius: BorderRadius.circular(20),
-                                    // No border: monetization CTA should not have outline
-                                  ),
-                                  child: Text(
-                                    'pause briefly',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color: palette['primaryButtonText'] ?? Color(0xFF4A4A48),
-                                      letterSpacing: 0.3,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                ),
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 260),
+                        curve: Curves.easeOut,
+                        opacity: showCta
+                            ? (isDayComplete ? 0.43 : ctaOpacity)
+                            : 0.0,
+                        child: TextButton(
+                          onPressed: showCta && canShowAd && rewardedAd != null
+                              ? () {
+                                  if (_soundMasterEnabled && _sfxEnabled) {
+                                    unawaited(SoundManager.instance.playTap());
+                                  }
+                                  showRewardedAd();
+                                }
+                              : null,
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: () {
+                                final cta = (palette['ctaButton'] ?? Color(0xFFA3D5D3)).withOpacity(0.92);
+                                if ((kDebugMode ? _devThemeValue : _userThemeValue) == kThemeForest) {
+                                  final base = Color(0xFFD2DAD4);
+                                  return Color.alphaBlend(base.withOpacity(0.45), cta);
+                                } else if ((kDebugMode ? _devThemeValue : _userThemeValue) == kThemeAutumn) {
+                                  final base = Color(0xFFDED7CF);
+                                  return Color.alphaBlend(base.withOpacity(0.45), cta);
+                                } else {
+                                  return cta;
+                                }
+                              }(),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              'pause briefly',
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: palette['primaryButtonText'] ?? Color(0xFF4A4A48),
+                                letterSpacing: 0.3,
+                                fontWeight: FontWeight.w400,
                               ),
-                            )
-                          : const SizedBox.shrink(),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
