@@ -477,6 +477,10 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
   Timer? _ctaRevealTimer;
   bool _ctaReady = true;
 
+  // Delayed settling label: shows "this moment is settling" after brief delay
+  Timer? _settlingLabelTimer;
+  bool _showSettlingLabel = false;
+
   // Step 4E: Tideline (ambient settling visual)
   late final AnimationController tidelineController;
   late final AnimationController tidelineGateController;
@@ -672,6 +676,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     rewardedAd?.dispose();
     _declineHoldTimer?.cancel();
     _ctaRevealTimer?.cancel();
+    _settlingLabelTimer?.cancel();
     super.dispose();
   }
 
@@ -1244,6 +1249,14 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
       _samplingEpoch++;
       _samplingDurationMs = samplingDurationMs;
     });
+
+    // Delay the "settling" label by ~200ms for calmer transition
+    _settlingLabelTimer?.cancel();
+    _settlingLabelTimer = Timer(const Duration(milliseconds: 200), () {
+      if (!mounted || !isSampling) return;
+      setState(() => _showSettlingLabel = true);
+    });
+
     _updateTidelineMotion();
 
     await _persistState();
@@ -1283,7 +1296,13 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
 
     await _persistState();
     await _ensureHoldTheDayVariantAssigned();
-    setState(() => isSampling = false);
+
+    // Reset settling label state
+    _settlingLabelTimer?.cancel();
+    setState(() {
+      isSampling = false;
+      _showSettlingLabel = false;
+    });
 
     // Update spatial easing based on current day settling (passive audio modifier)
     SoundManager.instance.updateSpatialSettling(
@@ -1317,14 +1336,18 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
       loadRewardedAd();
     }
 
-    final primaryLabel = isSampling
+    // Guard: during settling label delay, hold the previous label (no intermediate flash)
+    final bool settlingPending = isSampling && !_showSettlingLabel;
+    final primaryLabel = _showSettlingLabel
         ? 'this moment is settling'
+        : settlingPending
+        ? (_readingWasRevealedAtSamplingStart ? 'settle a little longer' : "receive today's reading")
         : !primaryReadingTakenToday
         ? 'receive today’s reading'
         : canAffordObservation
         ? 'settle a little longer'
         : 'this is enough for today';
-    final bool isEnoughLabel = primaryReadingTakenToday && !canAffordObservation;
+    final bool isEnoughLabel = primaryReadingTakenToday && !canAffordObservation && !isSampling;
     final String holdTheDayTextForToday =
         _getHoldTheDayText(holdTheDayVariantId ?? 0);
 
@@ -1543,19 +1566,35 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 24),
                           child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 250),
+                            duration: const Duration(milliseconds: 200), // ← use 250ms if you want; 200ms is canonical
                             switchInCurve: Curves.easeOut,
                             switchOutCurve: Curves.easeOut,
-                            transitionBuilder: (child, anim) =>
-                                FadeTransition(opacity: anim, child: child),
-                            child: (primaryReadingRevealed && (dailyReflection != null || isDayComplete))
+
+                            // ☢️ NUCLEAR OPTION: render only the current child
+                            layoutBuilder: (currentChild, _) {
+                              return currentChild ?? const SizedBox.shrink();
+                            },
+
+                            transitionBuilder: (child, anim) {
+                              return FadeTransition(
+                                opacity: anim,
+                                child: child,
+                              );
+                            },
+
+                            child: (primaryReadingRevealed &&
+                                (dailyReflection != null || isDayComplete))
                                 ? Text(
-                              isDayComplete ? holdTheDayTextForToday : dailyReflection!,
+                              isDayComplete
+                                  ? holdTheDayTextForToday
+                                  : dailyReflection!,
                               key: ValueKey<String>(
-                                isDayComplete ? 'hold_${holdTheDayVariantId ?? 0}' : 'reflection',
+                                isDayComplete
+                                    ? 'hold_${holdTheDayVariantId ?? 0}'
+                                    : 'reflection',
                               ),
                               textAlign: TextAlign.center,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 18,
                                 color: Color(0xFF474442),
                                 height: 1.6,
@@ -1563,9 +1602,11 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                                 fontWeight: FontWeight.w500,
                               ),
                             )
-                                : const SizedBox.shrink(key: ValueKey<String>('secondary_empty')),
-
+                                : const SizedBox.shrink(
+                              key: ValueKey<String>('secondary_empty'),
+                            ),
                           ),
+
                         ),
                       ),
                     ),
