@@ -183,6 +183,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                         max: 1,
                         onChanged: _soundMasterEnabled && _ambienceEnabled
                             ? (v) {
+                                debugPrint('>>> ambient slider adjusted');
                                 setModalState(() {
                                   _ambienceVolume = v;
                                 });
@@ -588,7 +589,13 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
         _sfxVolume = SoundManager.instance.sfxVolume;
       });
       if (_soundMasterEnabled && _ambienceEnabled) {
-        unawaited(SoundManager.instance.startAmbient());
+        SoundManager.instance.startAmbient().catchError((_) {
+          // Single safe retry on Source error (real device audio init race)
+          if (_soundMasterEnabled && _ambienceEnabled) {
+            return SoundManager.instance.startAmbient();
+          }
+          return Future<void>.value();
+        });
       }
     });
 

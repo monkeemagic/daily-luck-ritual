@@ -1,12 +1,14 @@
 import 'package:just_audio/just_audio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:math' as math;
 
 class SoundManager {
   SoundManager._internal();
 
   static final SoundManager instance = SoundManager._internal();
-  static const double _maxAmbientVolume = 0.5;
+  static const double _maxAmbientVolume = 0.8;
+  static const double _ambientBaseGain = 0.10;
 
   final AudioPlayer _ambientPlayer = AudioPlayer();
   final AudioPlayer _sfxPlayer = AudioPlayer();
@@ -14,7 +16,7 @@ class SoundManager {
   bool _ambientStarted = false;
   // Slider-facing volumes (**restore to original defaults**)
   double _ambientVolume = 0.3;
-  double _sfxVolume = 0.4;
+  double _sfxVolume = 0.2;
 
   // Persistent keys
   static const String _ambientKey = 'ambient_volume_level';
@@ -26,8 +28,18 @@ class SoundManager {
   bool _volumeLoaded = false;
   Future<void>? _initVolumeFut;
 
-  double get _effectiveAmbientVolume =>
-      (_ambientVolume * _ambientVolume) * _maxAmbientVolume;
+  double get _effectiveAmbientVolume {
+    if (_ambientVolume <= 0.0) return 0.0;
+
+    // Softer curve for perceptual smoothness
+    final curved = math.pow(_ambientVolume, 1.4).toDouble();
+
+    return (_ambientBaseGain +
+        (curved * (_maxAmbientVolume - _ambientBaseGain)))
+        .clamp(0.0, 1.0);
+  }
+
+
 
   // Add public accessors for current volumes. These directly reflect loaded/persisted state.
   double get ambientVolume => _ambientVolume;
@@ -49,6 +61,7 @@ class SoundManager {
   }
 
   Future<void> startAmbient() async {
+    debugPrint('>>> startAmbient CALLED');
     // Guard: do nothing if already starting or playing
     if (_ambientStarted || _ambientPlayer.playing) return;
     _ambientStarted = true;
@@ -58,19 +71,16 @@ class SoundManager {
     await _initVolumeFut;
 
     try {
+      // 1. Set asset first
       await _ambientPlayer.setAsset('assets/audio/ambience/ocean_ambient.wav');
       await _ambientPlayer.setLoopMode(LoopMode.one);
-      await _ambientPlayer.setVolume(0.0); // Start at zero, fade in
+      // 2. Set effective volume synchronously (before play)
+      await _ambientPlayer.setVolume(_effectiveAmbientVolume);
+      // 3. Then call play
       await _ambientPlayer.play();
-      final targetVol = _effectiveAmbientVolume;
-      const fadeSteps = 20;
-      const fadeDuration = Duration(milliseconds: 2000);
-      for (int i = 1; i <= fadeSteps; i++) {
-        await Future.delayed(Duration(milliseconds: fadeDuration.inMilliseconds ~/ fadeSteps));
-        final vol = targetVol * (i / fadeSteps);
-        await _ambientPlayer.setVolume(vol);
-      }
     } catch (e, st) {
+      // Reset guard so subsequent calls can retry
+      _ambientStarted = false;
       if (kDebugMode) {
         debugPrint('SoundManager.startAmbient failed: $e');
         debugPrintStack(stackTrace: st);
