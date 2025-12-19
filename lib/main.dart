@@ -115,7 +115,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Settings',
+              'settings',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -130,7 +130,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                   children: [
                     SwitchListTile(
                       value: _soundMasterEnabled,
-                      title: const Text('Sound (Master switch)', style: TextStyle(fontSize: 16)),
+                      title: const Text('sounds', style: TextStyle(fontSize: 16)),
                       activeColor: palette['primaryButton'] ?? const Color(0xFFA3D5D3),
                       onChanged: (val) {
                         setState(() {
@@ -146,7 +146,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                     ),
                     SwitchListTile(
                       value: _ambienceEnabled,
-                      title: const Text('Ambient sound', style: TextStyle(fontSize: 16)),
+                      title: const Text('ambient sound', style: TextStyle(fontSize: 16)),
                       activeColor: palette['primaryButton'] ?? const Color(0xFFA3D5D3),
                       onChanged: _soundMasterEnabled
                           ? (val) {
@@ -164,7 +164,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                     ),
                     SwitchListTile(
                       value: _sfxEnabled,
-                      title: const Text('Button tap sound', style: TextStyle(fontSize: 16)),
+                      title: const Text('button tap sound', style: TextStyle(fontSize: 16)),
                       activeColor: palette['primaryButton'] ?? const Color(0xFFA3D5D3),
                       onChanged: _soundMasterEnabled
                           ? (val) {
@@ -176,7 +176,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                           : null,
                     ),
                     ListTile(
-                      title: const Text('Ambient volume', style: TextStyle(fontSize: 15)),
+                      title: const Text('ambient volume', style: TextStyle(fontSize: 15)),
                       subtitle: Slider(
                         value: _ambienceVolume,
                         min: 0,
@@ -200,7 +200,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                       ),
                     ),
                     ListTile(
-                      title: const Text('Button tap volume', style: TextStyle(fontSize: 15)),
+                      title: const Text('button tap volume', style: TextStyle(fontSize: 15)),
                       subtitle: Slider(
                         value: _sfxVolume,
                         min: 0,
