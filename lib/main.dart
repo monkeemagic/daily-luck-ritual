@@ -1160,7 +1160,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
 
     RewardedAd.load(
       adUnitId:
-      'ca-app-pub-3940256099942544/5224354917',
+      'ca-app-pub-7039607520878767/9982221167',
       request: const AdRequest(),
       rewardedAdLoadCallback:
       RewardedAdLoadCallback(

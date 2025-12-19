@@ -5,10 +5,10 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
-        <!-- AdMob TEST Application ID (required to prevent startup crash) -->
+        <!-- AdMob Application ID -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"/>
+            android:value="ca-app-pub-7039607520878767~7039544810"/>
 
         <activity
             android:name=".MainActivity"
