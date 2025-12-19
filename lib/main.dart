@@ -712,6 +712,11 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
               return SoundManager.instance.startAmbient();
             }
             return Future<void>.value();
+          }).then((_) {
+            // Reapply spatial easing with current day settling value
+            SoundManager.instance.updateSpatialSettling(
+              primaryReadingRevealed ? _frontLoadedSettling(interactionProgress) : 0.0,
+            );
           });
         });
       }
@@ -809,6 +814,10 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
       // If the day is already complete on load, ensure hold-the-day variant is assigned (silent).
       await _ensureHoldTheDayVariantAssigned(playSfx: false);
       _updateTidelineMotion();
+      // Apply spatial easing with restored day settling value
+      SoundManager.instance.updateSpatialSettling(
+        primaryReadingRevealed ? _frontLoadedSettling(interactionProgress) : 0.0,
+      );
     }
   }
 
@@ -1276,6 +1285,10 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     await _ensureHoldTheDayVariantAssigned();
     setState(() => isSampling = false);
 
+    // Update spatial easing based on current day settling (passive audio modifier)
+    SoundManager.instance.updateSpatialSettling(
+      primaryReadingRevealed ? _frontLoadedSettling(interactionProgress) : 0.0,
+    );
 
     // Reveal CTA only after the settle moment, giving time to process what's on screen.
     _ctaRevealTimer = Timer(const Duration(milliseconds: 1500), () {
@@ -1305,7 +1318,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     }
 
     final primaryLabel = isSampling
-        ? 'settling…'
+        ? 'this moment is settling'
         : !primaryReadingTakenToday
         ? 'receive today’s reading'
         : canAffordObservation
@@ -1615,7 +1628,36 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                                 letterSpacing: 0.5,
                               ),
                             ),
-                            child: Text(primaryLabel),
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 200),
+                              switchInCurve: Curves.easeOut,
+                              switchOutCurve: Curves.easeOut,
+
+                              // ✅ THIS IS THE FIX
+                              layoutBuilder: (currentChild, previousChildren) {
+                                return Stack(
+                                  alignment: Alignment.center,
+                                  children: <Widget>[
+                                    ...previousChildren,
+                                    if (currentChild != null) currentChild,
+                                  ],
+                                );
+                              },
+
+                              transitionBuilder: (child, animation) {
+                                return FadeTransition(
+                                  opacity: animation,
+                                  child: child,
+                                );
+                              },
+
+                              child: Text(
+                                primaryLabel,
+                                key: ValueKey<String>(primaryLabel),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+
                           ),
                         ),
                       ),

@@ -20,6 +20,13 @@ class SoundManager {
   double _ambientVolume = 0.3;
   double _sfxVolume = 0.2;
 
+  // Spatial easing: passive modifier based on day settling (0.0 → 1.0)
+  // Creates barely perceptible sense of audio becoming more "placed" over the day.
+  // Does not affect loudness or user control. Resets naturally with day reset.
+  // NOTE: True spatial diffusion requires DSP not available in basic just_audio.
+  // This tracks the value for future enhancement; current implementation is no-op.
+  double _spatialSettling = 0.0;
+
   // Persistent keys
   static const String _ambientKey = 'ambient_volume_level';
   static const String _sfxKey = 'ui_volume_level';
@@ -41,11 +48,40 @@ class SoundManager {
         .clamp(0.0, 1.0);
   }
 
-
-
   // Add public accessors for current volumes. These directly reflect loaded/persisted state.
   double get ambientVolume => _ambientVolume;
   double get sfxVolume => _sfxVolume;
+
+  // Spatial easing constraints (for future DSP implementation):
+  // Range: 0.0 → 0.05 max (barely perceptible)
+  // Curve: pow(settling, 1.5) for flat, front-loaded feel
+  // Axis: stereo width / diffusion (NOT speed, pitch, or tempo)
+  static const double _spatialEasingMax = 0.05;
+
+  /// Updates the spatial settling modifier based on normalized day progress.
+  /// Called when day settling changes. Does not affect volume or user control.
+  /// Safe to call at any time; fails silently if spatial DSP not available.
+  void updateSpatialSettling(double settlingProgress) {
+    final clamped = settlingProgress.clamp(0.0, 1.0);
+    if ((_spatialSettling - clamped).abs() < 0.001) return; // Avoid redundant updates
+    _spatialSettling = clamped;
+    _applySpatialEasing();
+  }
+
+  /// Applies the current spatial easing modifier to the ambient player.
+  /// Fire-and-forget; fails silently. Does not touch volume, speed, or pitch.
+  /// NOTE: True spatial diffusion (stereo width) requires DSP not in basic just_audio.
+  /// This is a no-op placeholder that fails silently to current behavior.
+  void _applySpatialEasing() {
+    if (!_ambientPlayer.playing) return;
+    // Compute the spatial easing value (for future DSP implementation)
+    // Using pow(settling, 1.5) for flat curve as specified
+    // ignore: unused_local_variable
+    final spatialEase = math.pow(_spatialSettling, 1.5) * _spatialEasingMax;
+    // No-op: just_audio's basic AudioPlayer lacks stereo width / diffusion control.
+    // True spatial easing would require AudioPipeline with custom DSP effects.
+    // Failing silently = no audible difference from current behavior (correct).
+  }
 
   // Call once before first playback (e.g. startup/app init)
   Future<void> ensureVolumesLoaded() async {
@@ -97,7 +133,9 @@ class SoundManager {
       await _ambientPlayer.setVolume(startVol);
       // 3. Then call play
       await _ambientPlayer.play();
-      // 4. Fire-and-forget fade to target volume (derived from slider)
+      // 4. Apply current spatial easing (passive modifier, fails silently)
+      _applySpatialEasing();
+      // 5. Fire-and-forget fade to target volume (derived from slider)
       _fadeAmbientTo(targetVol, startVol);
     } catch (e, st) {
       // Reset guard so subsequent calls can retry
