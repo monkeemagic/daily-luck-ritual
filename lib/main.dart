@@ -1170,12 +1170,16 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
               }
             },
           );
-          rewardedAd = ad;
-          isAdLoading = false;
+          setState(() {
+            rewardedAd = ad;
+            isAdLoading = false;
+          });
         },
         onAdFailedToLoad: (_) {
-          rewardedAd = null;
-          isAdLoading = false;
+          setState(() {
+            rewardedAd = null;
+            isAdLoading = false;
+          });
         },
       ),
     );
@@ -1625,45 +1629,46 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                         opacity: showCta
                             ? (isDayComplete ? 0.43 : ctaOpacity)
                             : 0.0,
-                        child: TextButton(
-                          onPressed: showCta && canShowAd && rewardedAd != null
-                              ? () {
-                                  if (_soundMasterEnabled && _sfxEnabled) {
-                                    unawaited(SoundManager.instance.playTap());
+                        child: ExcludeSemantics(
+                          excluding: !showCta,
+                          child: GestureDetector(
+                            behavior: showCta ? HitTestBehavior.opaque : HitTestBehavior.translucent,
+                            onTap: showCta && canShowAd && rewardedAd != null
+                                ? () {
+                                    if (_soundMasterEnabled && _sfxEnabled) {
+                                      unawaited(SoundManager.instance.playTap());
+                                    }
+                                    showRewardedAd();
                                   }
-                                  showRewardedAd();
-                                }
-                              : null,
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                          ),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: () {
-                                final cta = (palette['ctaButton'] ?? Color(0xFFA3D5D3)).withOpacity(0.92);
-                                if ((kDebugMode ? _devThemeValue : _userThemeValue) == kThemeForest) {
-                                  final base = Color(0xFFD2DAD4);
-                                  return Color.alphaBlend(base.withOpacity(0.45), cta);
-                                } else if ((kDebugMode ? _devThemeValue : _userThemeValue) == kThemeAutumn) {
-                                  final base = Color(0xFFDED7CF);
-                                  return Color.alphaBlend(base.withOpacity(0.45), cta);
-                                } else {
-                                  return cta;
-                                }
-                              }(),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              'pause briefly',
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: palette['primaryButtonText'] ?? Color(0xFF4A4A48),
-                                letterSpacing: 0.3,
-                                fontWeight: FontWeight.w400,
+                                : null,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: () {
+                                  final cta = (palette['ctaButton'] ?? Color(0xFFA3D5D3)).withOpacity(0.92);
+                                  if ((kDebugMode ? _devThemeValue : _userThemeValue) == kThemeForest) {
+                                    final base = Color(0xFFD2DAD4);
+                                    return Color.alphaBlend(base.withOpacity(0.45), cta);
+                                  } else if ((kDebugMode ? _devThemeValue : _userThemeValue) == kThemeAutumn) {
+                                    final base = Color(0xFFDED7CF);
+                                    return Color.alphaBlend(base.withOpacity(0.45), cta);
+                                  } else {
+                                    return cta;
+                                  }
+                                }(),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                'pause briefly',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: palette['primaryButtonText'] ?? Color(0xFF4A4A48),
+                                  letterSpacing: 0.3,
+                                  fontWeight: FontWeight.w400,
+                                ),
                               ),
                             ),
                           ),
