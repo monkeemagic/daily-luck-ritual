@@ -1,4 +1,4 @@
-import 'dart:math';
+﻿import 'dart:math';
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
@@ -15,6 +15,22 @@ import '../iap/iap_constants.dart';
 /// ========================================
 const String kAppVersion = '3.10.4';
 const String kThemeOcean = 'ocean';
+
+/// Daily-rotating anchor CTA text (deterministic by local date)
+String getDailyAnchorCtaText(DateTime nowLocal) {
+  const phrases = [
+    "discover today's moment",
+    "notice today's luck",
+    "see how today feels",
+    "observe today's climate",
+    "experience this moment",
+    "encounter today's climate",
+    "approach today's luck",
+  ];
+  final dateKey = nowLocal.year * 10000 + nowLocal.month * 100 + nowLocal.day;
+  final idx = dateKey % phrases.length;
+  return phrases[idx];
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -102,7 +118,6 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
   // 🔊 SETTINGS MODAL (with SOUND CONTROLS)
   // ========================================
   Widget buildSettingsModal(BuildContext context) {
-    final palette = _themePalettes[(kDebugMode ? _devThemeValue : _userThemeValue)] ?? _themePalettes[kThemeOcean]!;
     return Padding(
       padding: const EdgeInsets.only(
         top: 18,
@@ -119,19 +134,23 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: palette['primaryButtonText'] ?? const Color(0xFF4A4A48),
+                color: const Color(0xFF4A4A48),
               ),
             ),
             const SizedBox(height: 16),
             StatefulBuilder(
               builder: (context, setModalState) {
+                // Recompute palette inside builder so it updates on theme change
+                final palette = _themePalettes[(kDebugMode ? _devThemeValue : _userThemeValue)] ?? _themePalettes[kThemeOcean]!;
+                // Derive solid tideline accent from tidelineTop (increase opacity to ~70% for visibility)
+                final tidelineAccent = (palette['tidelineTop'] as Color).withOpacity(0.70);
                 return Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     SwitchListTile(
                       value: _soundMasterEnabled,
                       title: const Text('sounds', style: TextStyle(fontSize: 16)),
-                      activeColor: palette['primaryButton'] ?? const Color(0xFFA3D5D3),
+                      activeColor: tidelineAccent,
                       onChanged: (val) {
                         setState(() {
                           _soundMasterEnabled = val;
@@ -147,7 +166,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                     SwitchListTile(
                       value: _ambienceEnabled,
                       title: const Text('ambient sound', style: TextStyle(fontSize: 16)),
-                      activeColor: palette['primaryButton'] ?? const Color(0xFFA3D5D3),
+                      activeColor: tidelineAccent,
                       onChanged: _soundMasterEnabled
                           ? (val) {
                               setState(() {
@@ -165,7 +184,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                     SwitchListTile(
                       value: _sfxEnabled,
                       title: const Text('button tap sound', style: TextStyle(fontSize: 16)),
-                      activeColor: palette['primaryButton'] ?? const Color(0xFFA3D5D3),
+                      activeColor: tidelineAccent,
                       onChanged: _soundMasterEnabled
                           ? (val) {
                               setState(() {
@@ -175,51 +194,64 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                             }
                           : null,
                     ),
-                    ListTile(
-                      title: const Text('ambient volume', style: TextStyle(fontSize: 15)),
-                      subtitle: Slider(
-                        value: _ambienceVolume,
-                        min: 0,
-                        max: 1,
-                        onChanged: _soundMasterEnabled && _ambienceEnabled
-                            ? (v) {
-                                debugPrint('>>> ambient slider adjusted');
-                                setModalState(() {
-                                  _ambienceVolume = v;
-                                });
-                              }
-                            : null,
-                        onChangeEnd: _soundMasterEnabled && _ambienceEnabled
-                            ? (v) {
-                                setState(() {
-                                  _ambienceVolume = v;
-                                  SoundManager.instance.setAmbientVolume(v);
-                                });
-                              }
-                            : null,
+                    SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        activeTrackColor: tidelineAccent,
+                        thumbColor: tidelineAccent,
+                        inactiveTrackColor: tidelineAccent.withOpacity(0.24),
+                      ),
+                      child: ListTile(
+                        title: const Text('ambient volume', style: TextStyle(fontSize: 15)),
+                        subtitle: Slider(
+                          value: _ambienceVolume,
+                          min: 0,
+                          max: 1,
+                          onChanged: _soundMasterEnabled && _ambienceEnabled
+                              ? (v) {
+                                  setModalState(() {
+                                    _ambienceVolume = v;
+                                  });
+                                }
+                              : null,
+                          onChangeEnd: _soundMasterEnabled && _ambienceEnabled
+                              ? (v) {
+                                  setState(() {
+                                    _ambienceVolume = v;
+                                    SoundManager.instance.setAmbientVolume(v);
+                                  });
+                                }
+                              : null,
+                        ),
                       ),
                     ),
-                    ListTile(
-                      title: const Text('button tap volume', style: TextStyle(fontSize: 15)),
-                      subtitle: Slider(
-                        value: _sfxVolume,
-                        min: 0,
-                        max: 1,
-                        onChanged: _soundMasterEnabled && _sfxEnabled
-                            ? (v) {
-                                setModalState(() {
-                                  _sfxVolume = v;
-                                });
-                              }
-                            : null,
-                        onChangeEnd: _soundMasterEnabled && _sfxEnabled
-                            ? (v) {
-                                setState(() {
-                                  _sfxVolume = v;
-                                  SoundManager.instance.setSfxVolume(v);
-                                });
-                              }
-                            : null,
+                    SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        activeTrackColor: tidelineAccent,
+                        thumbColor: tidelineAccent,
+                        inactiveTrackColor: tidelineAccent.withOpacity(0.24),
+                      ),
+                      child: ListTile(
+                        title: const Text('button tap volume', style: TextStyle(fontSize: 15)),
+                        subtitle: Slider(
+                          value: _sfxVolume,
+                          min: 0,
+                          max: 1,
+                          onChanged: _soundMasterEnabled && _sfxEnabled
+                              ? (v) {
+                                  setModalState(() {
+                                    _sfxVolume = v;
+                                  });
+                                }
+                              : null,
+                          onChangeEnd: _soundMasterEnabled && _sfxEnabled
+                              ? (v) {
+                                  setState(() {
+                                    _sfxVolume = v;
+                                    SoundManager.instance.setSfxVolume(v);
+                                  });
+                                }
+                              : null,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 26),
@@ -227,15 +259,28 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                     const SizedBox(height: 12),
                     ListTile(
                       title: Text('ocean'),
-                      subtitle: Text('applied', style: TextStyle(fontSize: 15, color: Color(0xFF4A4A48))),
-                      onTap: () { setState(() { _userThemeValue = kThemeOcean; }); },
+                      subtitle: Text(_userThemeValue == kThemeOcean ? 'applied' : 'available', style: TextStyle(fontSize: 15, color: Color(0xFF4A4A48))),
+                      trailing: (_userThemeValue != kThemeOcean) 
+                          ? Icon(Icons.chevron_right, size: 16, color: Color(0xFF222222).withOpacity(0.62)) 
+                          : null,
+                      onTap: _userThemeValue == kThemeOcean ? null : () async {
+                        setState(() { _userThemeValue = kThemeOcean; });
+                        await _persistState();
+                        setModalState(() {});
+                      },
                     ),
                     GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: () async {
                         if (_forestUnlocked) {
-                          setState(() { _userThemeValue = kThemeForest; });
+                          if (_userThemeValue != kThemeForest) {
+                            setState(() { _userThemeValue = kThemeForest; });
+                            await _persistState();
+                            setModalState(() {});
+                          }
                         } else {
                           await IapService.instance.buy(kThemeForest);
+                          setModalState(() {}); // Refresh after purchase attempt
                         }
                       },
                       child: Padding(
@@ -248,21 +293,31 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text('forest'),
-                                  Text(_forestUnlocked && _userThemeValue == kThemeForest ? 'applied' : 'available', style: TextStyle(fontSize: 15, color: Color(0xFF4A4A48))),
+                                  Text(
+                                    _userThemeValue == kThemeForest ? 'applied' : 'available',
+                                    style: TextStyle(fontSize: 15, color: Color(0xFF4A4A48)),
+                                  ),
                                 ],
                               ),
                             ),
-                            Icon(Icons.chevron_right, size: 16, color: Color(0xFF222222).withOpacity(0.62)),
+                            if (!_forestUnlocked || _userThemeValue != kThemeForest)
+                              Icon(Icons.chevron_right, size: 16, color: Color(0xFF222222).withOpacity(0.62)),
                           ],
                         ),
                       ),
                     ),
                     GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: () async {
                         if (_autumnUnlocked) {
-                          setState(() { _userThemeValue = kThemeAutumn; });
+                          if (_userThemeValue != kThemeAutumn) {
+                            setState(() { _userThemeValue = kThemeAutumn; });
+                            await _persistState();
+                            setModalState(() {});
+                          }
                         } else {
                           await IapService.instance.buy(kThemeAutumn);
+                          setModalState(() {}); // Refresh after purchase attempt
                         }
                       },
                       child: Padding(
@@ -275,11 +330,15 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text('autumn'),
-                                  Text(_autumnUnlocked && _userThemeValue == kThemeAutumn ? 'applied' : 'available', style: TextStyle(fontSize: 15, color: Color(0xFF4A4A48))),
+                                  Text(
+                                    _userThemeValue == kThemeAutumn ? 'applied' : 'available',
+                                    style: TextStyle(fontSize: 15, color: Color(0xFF4A4A48)),
+                                  ),
                                 ],
                               ),
                             ),
-                            Icon(Icons.chevron_right, size: 16, color: Color(0xFF222222).withOpacity(0.62)),
+                            if (!_autumnUnlocked || _userThemeValue != kThemeAutumn)
+                              Icon(Icons.chevron_right, size: 16, color: Color(0xFF222222).withOpacity(0.62)),
                           ],
                         ),
                       ),
@@ -344,7 +403,9 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                       ),
                     ),
                     GestureDetector(
-                      onTap: _isSupporter ? null : () async {
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () async {
+                        if (_isSupporter) return;
                         await IapService.instance.buy(kSupportProject);
                       },
                       child: Padding(
@@ -469,7 +530,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
   bool isAdLoading = false;
 
   int rewardedAdsToday = 0;
-  static const int kMaxRewardedAdsPerDay = 3;
+  static const int kMaxRewardedAdsPerDay = 1;
   bool adsDeclinedToday = false;
 
   // Safety (non-verbal): require a deliberate gesture (long-press) to decline ads.
@@ -501,7 +562,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
   // ========================================
   double get interactionProgress {
     if (!primaryReadingTakenToday) return 0.0;
-    const double maxPostPrimaryObservationInteractions = 7.0;
+    const double maxPostPrimaryObservationInteractions = 2.0;
     final double progress =
         observationInteractionsToday / maxPostPrimaryObservationInteractions;
     return progress.clamp(0.0, 1.0);
@@ -569,7 +630,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     setState(() {
       adsDeclinedToday = true;
       // Option A: complete settling immediately and persist via interaction progress.
-      observationInteractionsToday = 7;
+      observationInteractionsToday = 2;
       daySettled = true;
     });
 
@@ -587,19 +648,15 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     _ctaReady = true;
     // Start audio after first frame; safe even before files are present (errors are swallowed).
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      debugPrint('[Audio] Cold start: initState postFrameCallback');
       await SoundManager.instance.ensureVolumesLoaded();
       setState(() {
         _ambienceVolume = SoundManager.instance.ambientVolume;
         _sfxVolume = SoundManager.instance.sfxVolume;
       });
       if (_soundMasterEnabled && _ambienceEnabled) {
-        SoundManager.instance.startAmbient().catchError((_) {
-          // Single safe retry on Source error (real device audio init race)
-          if (_soundMasterEnabled && _ambienceEnabled) {
-            return SoundManager.instance.startAmbient();
-          }
-          return Future<void>.value();
-        });
+        debugPrint('[Audio] Cold start: calling ensureAmbientPlaying');
+        await SoundManager.instance.ensureAmbientPlaying();
       }
     });
 
@@ -627,11 +684,11 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     });
     tidelineGateController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: const Duration(milliseconds: 4200), // Much slower ramp (~3x longer)
     );
     tidelineGate = CurvedAnimation(
       parent: tidelineGateController,
-      curve: Curves.easeOutCubic,
+      curve: Curves.easeInQuad, // Start slow, accelerate gently (was easeOutCubic which started fast)
     );
 
     holdController = AnimationController(
@@ -700,29 +757,21 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
       SoundManager.instance.fadeOutAmbient();
     }
     if (state == AppLifecycleState.resumed) {
-      debugPrint('>>> lifecycle resumed: starting ambient');
+      debugPrint('[Audio] Lifecycle resumed');
       SoundManager.instance.ensureVolumesLoaded().then((_) {
         setState(() {
           _ambienceVolume = SoundManager.instance.ambientVolume;
           _sfxVolume = SoundManager.instance.sfxVolume;
         });
       });
-      // Always attempt to restart ambient on resume (guards inside startAmbient handle duplicates)
+      // Always attempt to restart ambient on resume
       if (_soundMasterEnabled && _ambienceEnabled) {
-        // Stop first to reset guard, then start fresh with fade-in
-        SoundManager.instance.stopAmbient().then((_) {
-          SoundManager.instance.startAmbient().catchError((_) {
-            // Single safe retry on Source error (real device audio init race)
-            if (_soundMasterEnabled && _ambienceEnabled) {
-              return SoundManager.instance.startAmbient();
-            }
-            return Future<void>.value();
-          }).then((_) {
-            // Reapply spatial easing with current day settling value
-            SoundManager.instance.updateSpatialSettling(
-              primaryReadingRevealed ? _frontLoadedSettling(interactionProgress) : 0.0,
-            );
-          });
+        debugPrint('[Audio] Resume: calling ensureAmbientPlaying');
+        SoundManager.instance.ensureAmbientPlaying().then((_) {
+          // Reapply spatial easing with current day settling value
+          SoundManager.instance.updateSpatialSettling(
+            primaryReadingRevealed ? _frontLoadedSettling(interactionProgress) : 0.0,
+          );
         });
       }
       // (SFX are always event-triggered, so they are not resumed blindly)
@@ -784,6 +833,12 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
       await prefs.setString('app_version', kAppVersion);
     }
 
+    // Load theme (persists across days, not reset daily)
+    final savedTheme = prefs.getString('applied_theme');
+    if (savedTheme != null && (savedTheme == kThemeOcean || savedTheme == kThemeForest || savedTheme == kThemeAutumn)) {
+      _userThemeValue = savedTheme;
+    }
+
     if (prefs.getString('last_day') != todayKey) {
       tidelineController.value = 0.0;
       tidelineGateController.value = 0.0;
@@ -838,6 +893,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     await prefs.setInt('chances', observationCredits);
     await prefs.setInt('ads_today', rewardedAdsToday);
     await prefs.setBool('ads_declined', adsDeclinedToday);
+    await prefs.setString('applied_theme', _userThemeValue);
 
     if (meaningArchetype != null) {
       await prefs.setString(
@@ -917,7 +973,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
 
     if (observationInteractionsToday <= 2) {
       range = 7.0;
-    } else if (observationInteractionsToday <= 5) {
+    } else if (observationInteractionsToday <= 4) {
       range = 4.5;
     } else {
       if (luckIndex >= 98) {
@@ -1159,8 +1215,8 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     isAdLoading = true;
 
     RewardedAd.load(
-      adUnitId:
-      'ca-app-pub-7039607520878767/9982221167',
+      // TESTFLIGHT: Google test rewarded ad unit ID (swap back to real ID for App Store)
+      adUnitId: 'ca-app-pub-3940256099942544/5224354917',
       request: const AdRequest(),
       rewardedAdLoadCallback:
       RewardedAdLoadCallback(
@@ -1168,19 +1224,19 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
           // Attach fullscreen callbacks for ambient audio control
           ad.fullScreenContentCallback = FullScreenContentCallback(
             onAdShowedFullScreenContent: (ad) {
-              debugPrint('>>> ad showed: stopping ambient');
+              debugPrint('[Audio] Ad shown: stopping ambient');
               SoundManager.instance.stopAmbient();
             },
             onAdDismissedFullScreenContent: (ad) {
-              debugPrint('>>> ad dismissed: starting ambient');
+              debugPrint('[Audio] Ad dismissed: calling ensureAmbientPlaying');
               if (_soundMasterEnabled && _ambienceEnabled) {
-                SoundManager.instance.startAmbient();
+                SoundManager.instance.ensureAmbientPlaying();
               }
             },
             onAdFailedToShowFullScreenContent: (ad, error) {
-              debugPrint('>>> ad failed to show: starting ambient');
+              debugPrint('[Audio] Ad failed to show: calling ensureAmbientPlaying');
               if (_soundMasterEnabled && _ambienceEnabled) {
-                SoundManager.instance.startAmbient();
+                SoundManager.instance.ensureAmbientPlaying();
               }
             },
           );
@@ -1201,14 +1257,22 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
 
 
   void showRewardedAd() {
-    if (!canShowAd || rewardedAd == null) return;
+    // Allow monetization tap to proceed even during ritual states;
+    // only block if ads are exhausted or declined (user choice).
+    if (adsExhausted || adsDeclinedToday) return;
+
+    // If ad is not loaded yet, trigger load and return (tap registered, ad shows when ready on next tap)
+    if (rewardedAd == null) {
+      loadRewardedAd();
+      return;
+    }
 
     // Gentle fade-out before ad starts (fire-and-forget, non-blocking)
     SoundManager.instance.fadeOutAmbient();
 
     rewardedAd!.show(onUserEarnedReward: (_, __) async {
       setState(() {
-        observationCredits += 2;
+        observationCredits += 1;
         rewardedAdsToday++;
       });
 
@@ -1341,9 +1405,9 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     final primaryLabel = _showSettlingLabel
         ? 'this moment is settling'
         : settlingPending
-        ? (_readingWasRevealedAtSamplingStart ? 'settle a little longer' : "receive today's reading")
+        ? (_readingWasRevealedAtSamplingStart ? 'settle a little longer' : getDailyAnchorCtaText(DateTime.now()))
         : !primaryReadingTakenToday
-        ? 'receive today’s reading'
+        ? getDailyAnchorCtaText(DateTime.now())
         : canAffordObservation
         ? 'settle a little longer'
         : 'this is enough for today';
@@ -1519,7 +1583,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                     const Opacity(
                       opacity: 0.9,
                       child: Text(
-                        '🍀 Today’s Luck Index',
+                        '🍀 Today’s Luck Climate',
                         style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 20, // Micro bump for balance if needed
@@ -1585,11 +1649,12 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                             child: (primaryReadingRevealed &&
                                 (dailyReflection != null || isDayComplete))
                                 ? Text(
-                              isDayComplete
+                              // Gate end-of-day text: only show AFTER settling completes (isSampling=false)
+                              (isDayComplete && !isSampling)
                                   ? holdTheDayTextForToday
                                   : dailyReflection!,
                               key: ValueKey<String>(
-                                isDayComplete
+                                (isDayComplete && !isSampling)
                                     ? 'hold_${holdTheDayVariantId ?? 0}'
                                     : 'reflection',
                               ),
@@ -1715,15 +1780,14 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                         child: ExcludeSemantics(
                           excluding: !showCta,
                           child: GestureDetector(
-                            behavior: showCta ? HitTestBehavior.opaque : HitTestBehavior.translucent,
-                            onTap: showCta && canShowAd && rewardedAd != null
-                                ? () {
-                                    if (_soundMasterEnabled && _sfxEnabled) {
-                                      unawaited(SoundManager.instance.playTap());
-                                    }
-                                    showRewardedAd();
-                                  }
-                                : null,
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
+                              if (!showCta) return;
+                              if (_soundMasterEnabled && _sfxEnabled) {
+                                unawaited(SoundManager.instance.playTap());
+                              }
+                              showRewardedAd();
+                            },
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 14,
@@ -1810,7 +1874,7 @@ class _TidelinePainter extends CustomPainter {
         : 0.0;
     // Gate ramps motion in gently at anchor completion (no visible “start”).
     final double g = gate.clamp(0.0, 1.0);
-    final double gateEase = pow(g, 2.6).toDouble(); // stays near 0 longer (no “pop”)
+    final double gateEase = pow(g, 3.8).toDouble(); // stays near 0 longer (no “pop”)
     final double amp = ampRaw * gateEase;
 
     // Use a multi-frequency blend to avoid a “single looping wave” feel.

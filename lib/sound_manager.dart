@@ -91,15 +91,23 @@ class SoundManager {
       final prefs = await SharedPreferences.getInstance();
       final double? ambVal = prefs.getDouble(_ambientKey);
       final double? sfxVal = prefs.getDouble(_sfxKey);
-      if (ambVal != null) _ambientVolume = ambVal.clamp(0.0, 1.0);
-      if (sfxVal != null) _sfxVolume = sfxVal.clamp(0.0, 1.0);
+      if (ambVal != null) {
+        _ambientVolume = ambVal.clamp(0.0, 1.0);
+      } else {
+        // First launch: persist the default so slider and audio stay in sync
+        await prefs.setDouble(_ambientKey, _ambientVolume);
+      }
+      if (sfxVal != null) {
+        _sfxVolume = sfxVal.clamp(0.0, 1.0);
+      } else {
+        await prefs.setDouble(_sfxKey, _sfxVolume);
+      }
     } catch (_) {
       // ignore
     }
   }
 
   // Fade-in configuration
-  static const double _fadeStartRatio = 0.3; // Start at 30% of target (audible)
   static const int _fadeSteps = 15;
   static const Duration _fadeDuration = Duration(milliseconds: 1200);
 
@@ -108,40 +116,77 @@ class SoundManager {
   static const Duration _fadeOutDuration = Duration(milliseconds: 600);
 
   Future<void> startAmbient() async {
-    debugPrint('>>> startAmbient CALLED');
     // Guard: do nothing if already starting or playing
     if (_ambientStarted || _ambientPlayer.playing) return;
+    await _startAmbientInternal();
+  }
+
+  /// Ensures ambient audio is actually playing with fade-in from silence.
+  /// Safe to call multiple times; guards against double-start.
+  /// If _ambientStarted is true but player is not playing, resets and retries.
+  /// Call from: app cold start, app resume, post-ad return.
+  Future<void> ensureAmbientPlaying() async {
+    // If guard says started but not actually playing, reset and retry
+    if (_ambientStarted && !_ambientPlayer.playing) {
+      _ambientStarted = false;
+    }
+
+    // If already playing, just ensure volume is correct (fade from current to target)
+    if (_ambientPlayer.playing) {
+      final targetVol = _effectiveAmbientVolume;
+      final currentVol = _ambientPlayer.volume;
+      if ((currentVol - targetVol).abs() > 0.01) {
+        _fadeAmbientTo(targetVol, currentVol);
+      }
+      return;
+    }
+
+    // Not playing - start fresh
+    await _startAmbientInternal();
+  }
+
+  /// Internal start logic extracted for reuse
+  Future<void> _startAmbientInternal() async {
     _ambientStarted = true;
 
     // Always ensure up-to-date before playback.
     _initVolumeFut ??= ensureVolumesLoaded();
     await _initVolumeFut;
 
-    // Cancel any lingering fade (e.g. fade-out residue from ads) before restarting.
-    // This ensures we resync cleanly from the persisted slider value.
+    // Cancel any lingering fade
     _ambientFadeToken++;
 
     try {
-      // Resync: derive target from authoritative _ambientVolume (slider source of truth)
       final targetVol = _effectiveAmbientVolume;
-      final startVol = targetVol * _fadeStartRatio;
 
       // 1. Set asset first
       await _ambientPlayer.setAsset('assets/audio/ambience/ocean_ambient.wav');
       await _ambientPlayer.setLoopMode(LoopMode.one);
-      // 2. Explicitly set player volume from persisted slider value (clears fade-out residue)
-      await _ambientPlayer.setVolume(startVol);
-      // 3. Then call play
-      await _ambientPlayer.play();
+      // 2. ALWAYS start silent to prevent pop/static on play()
+      await _ambientPlayer.setVolume(0.0);
+      // 3. Then trigger play WITHOUT await
+      _ambientPlayer.play();
+
+      final started = await _ambientPlayer.playingStream
+          .firstWhere((p) => p == true)
+          .timeout(
+            const Duration(seconds: 2),
+            onTimeout: () => false,
+          );
+
+      if (!started) {
+        _ambientStarted = false;
+        return;
+      }
+
       // 4. Apply current spatial easing (passive modifier, fails silently)
       _applySpatialEasing();
-      // 5. Fire-and-forget fade to target volume (derived from slider)
-      _fadeAmbientTo(targetVol, startVol);
+      // 5. Fire-and-forget fade from 0.0 to slider's effective volume
+      _fadeAmbientTo(targetVol, 0.0);
     } catch (e, st) {
-      // Reset guard so subsequent calls can retry
       _ambientStarted = false;
       if (kDebugMode) {
-        debugPrint('SoundManager.startAmbient failed: $e');
+        debugPrint('[Audio] _startAmbientInternal failed: $e');
         debugPrintStack(stackTrace: st);
       }
     }

@@ -2,7 +2,7 @@ name: daily_luck_ritual
 description: "Daily Luck Ritual — a calm, nature-themed daily moment."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.0+25
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -30,8 +30,15 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
+  flutter_launcher_icons: ^0.13.1
   flutter_lints: ^6.0.0
+
+flutter_icons:
+  ios: true
+  android: true
+  image_path: "assets/icon/app_icon.png"
+
+flutter_test:
 
 flutter:
   uses-material-design: true
@@ -39,3 +46,4 @@ flutter:
   assets:
     - assets/audio/ambience/
     - assets/audio/sfx/
+
