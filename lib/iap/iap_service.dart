@@ -11,6 +11,13 @@ class IapService {
 
   Set<String> ownedProductIds = {};
   bool isInitialized = false;
+  
+  // Single-flight purchase guard: only one purchase flow at a time
+  bool _purchaseInProgress = false;
+  String? _purchaseInProgressProductId;
+  
+  bool get isPurchaseInProgress => _purchaseInProgress;
+  String? get purchaseInProgressProductId => _purchaseInProgressProductId;
 
   Future<void> initialize() async {
     final bool available = await _iap.isAvailable();
@@ -39,6 +46,17 @@ class IapService {
         ownedProductIds.add(purchase.productID);
       }
 
+      // Clear in-flight flag on any terminal state for this product
+      if (_purchaseInProgressProductId == purchase.productID) {
+        if (purchase.status == PurchaseStatus.purchased ||
+            purchase.status == PurchaseStatus.restored ||
+            purchase.status == PurchaseStatus.canceled ||
+            purchase.status == PurchaseStatus.error) {
+          _purchaseInProgress = false;
+          _purchaseInProgressProductId = null;
+        }
+      }
+
       if (purchase.pendingCompletePurchase) {
         await _iap.completePurchase(purchase);
       }
@@ -50,20 +68,40 @@ class IapService {
   }
 
   Future<void> buy(String productId) async {
-    final ProductDetailsResponse response =
-        await _iap.queryProductDetails({productId});
+    // Single-flight guard: ignore if purchase already in progress
+    if (_purchaseInProgress) return;
+    
+    // Set flag synchronously BEFORE any async work
+    _purchaseInProgress = true;
+    _purchaseInProgressProductId = productId;
+    
+    try {
+      final ProductDetailsResponse response =
+          await _iap.queryProductDetails({productId});
 
-    if (response.productDetails.isEmpty) return;
+      if (response.productDetails.isEmpty) {
+        // Clear flag if product not found
+        _purchaseInProgress = false;
+        _purchaseInProgressProductId = null;
+        return;
+      }
 
-    final ProductDetails productDetails = response.productDetails.first;
-    final PurchaseParam purchaseParam = PurchaseParam(productDetails: productDetails);
+      final ProductDetails productDetails = response.productDetails.first;
+      final PurchaseParam purchaseParam = PurchaseParam(productDetails: productDetails);
 
-    if (productId == kSupportProject) {
-      // If you want support to be repeatable, use buyConsumable
-      // For now, keeping as non-consumable per your original code but completing it.
-      _iap.buyNonConsumable(purchaseParam: purchaseParam);
-    } else {
-      _iap.buyNonConsumable(purchaseParam: purchaseParam);
+      if (productId == kSupportProject) {
+        // If you want support to be repeatable, use buyConsumable
+        // For now, keeping as non-consumable per your original code but completing it.
+        _iap.buyNonConsumable(purchaseParam: purchaseParam);
+      } else {
+        _iap.buyNonConsumable(purchaseParam: purchaseParam);
+      }
+      // Note: flag is cleared in _handlePurchaseUpdates when purchase completes/fails/cancels
+    } catch (e) {
+      // Clear flag on any exception
+      _purchaseInProgress = false;
+      _purchaseInProgressProductId = null;
+      rethrow;
     }
   }
 

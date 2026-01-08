@@ -143,62 +143,77 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                 // Recompute palette inside builder so it updates on theme change
                 final palette = _themePalettes[(kDebugMode ? _devThemeValue : _userThemeValue)] ?? _themePalettes[kThemeOcean]!;
                 // Derive solid tideline accent from tidelineTop (increase opacity to ~70% for visibility)
-                final tidelineAccent = (palette['tidelineTop'] as Color).withOpacity(0.70);
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SwitchListTile(
-                      value: _soundMasterEnabled,
-                      title: const Text('sounds', style: TextStyle(fontSize: 16)),
-                      activeColor: tidelineAccent,
-                      onChanged: (val) {
-                        setState(() {
-                          _soundMasterEnabled = val;
-                          if (!val) {
-                            SoundManager.instance.stopAll();
-                          } else if (_ambienceEnabled) {
-                            SoundManager.instance.startAmbient();
-                          }
-                        });
-                        setModalState(() {});
-                      },
-                    ),
-                    SwitchListTile(
-                      value: _ambienceEnabled,
-                      title: const Text('ambient sound', style: TextStyle(fontSize: 16)),
-                      activeColor: tidelineAccent,
-                      onChanged: _soundMasterEnabled
-                          ? (val) {
-                              setState(() {
-                                _ambienceEnabled = val;
-                                if (val && _soundMasterEnabled) {
-                                  SoundManager.instance.startAmbient();
-                                } else {
-                                  SoundManager.instance.stopAmbient();
-                                }
-                              });
-                              setModalState(() {});
+                final tidelineAccent = (palette['tidelineTop'] as Color).withOpacity(0.55);
+                final switchTrackActive = (palette['tidelineTop'] as Color).withOpacity(0.50);
+                final switchThumbActive = (palette['tidelineTop'] as Color).withOpacity(0.90);
+                final switchTrackInactive = (palette['tidelineTop'] as Color).withOpacity(0.20);
+                return SwitchTheme(
+                  data: SwitchThemeData(
+                    trackColor: MaterialStateProperty.resolveWith<Color>((states) {
+                      if (states.contains(MaterialState.selected)) {
+                        return switchTrackActive;
+                      }
+                      return switchTrackInactive;
+                    }),
+                    thumbColor: MaterialStateProperty.resolveWith<Color?>((states) {
+                      if (states.contains(MaterialState.selected)) {
+                        return switchThumbActive;
+                      }
+                      return null; // Default for inactive/disabled
+                    }),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SwitchListTile(
+                        value: _soundMasterEnabled,
+                        title: const Text('sounds', style: TextStyle(fontSize: 16)),
+                        onChanged: (val) {
+                          setState(() {
+                            _soundMasterEnabled = val;
+                            if (!val) {
+                              SoundManager.instance.stopAll();
+                            } else if (_ambienceEnabled) {
+                              SoundManager.instance.startAmbient();
                             }
-                          : null,
-                    ),
-                    SwitchListTile(
-                      value: _sfxEnabled,
-                      title: const Text('button tap sound', style: TextStyle(fontSize: 16)),
-                      activeColor: tidelineAccent,
-                      onChanged: _soundMasterEnabled
-                          ? (val) {
-                              setState(() {
-                                _sfxEnabled = val;
-                              });
-                              setModalState(() {});
-                            }
-                          : null,
-                    ),
+                          });
+                          setModalState(() {});
+                        },
+                      ),
+                      SwitchListTile(
+                        value: _ambienceEnabled,
+                        title: const Text('ambient sound', style: TextStyle(fontSize: 16)),
+                        onChanged: _soundMasterEnabled
+                            ? (val) {
+                                setState(() {
+                                  _ambienceEnabled = val;
+                                  if (val && _soundMasterEnabled) {
+                                    SoundManager.instance.startAmbient();
+                                  } else {
+                                    SoundManager.instance.stopAmbient();
+                                  }
+                                });
+                                setModalState(() {});
+                              }
+                            : null,
+                      ),
+                      SwitchListTile(
+                        value: _sfxEnabled,
+                        title: const Text('button tap sound', style: TextStyle(fontSize: 16)),
+                        onChanged: _soundMasterEnabled
+                            ? (val) {
+                                setState(() {
+                                  _sfxEnabled = val;
+                                });
+                                setModalState(() {});
+                              }
+                            : null,
+                      ),
                     SliderTheme(
                       data: SliderTheme.of(context).copyWith(
                         activeTrackColor: tidelineAccent,
                         thumbColor: tidelineAccent,
-                        inactiveTrackColor: tidelineAccent.withOpacity(0.24),
+                        inactiveTrackColor: tidelineAccent.withOpacity(0.20),
                       ),
                       child: ListTile(
                         title: const Text('ambient volume', style: TextStyle(fontSize: 15)),
@@ -228,7 +243,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                       data: SliderTheme.of(context).copyWith(
                         activeTrackColor: tidelineAccent,
                         thumbColor: tidelineAccent,
-                        inactiveTrackColor: tidelineAccent.withOpacity(0.24),
+                        inactiveTrackColor: tidelineAccent.withOpacity(0.20),
                       ),
                       child: ListTile(
                         title: const Text('button tap volume', style: TextStyle(fontSize: 15)),
@@ -272,6 +287,8 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                     GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       onTap: () async {
+                        // Single-flight: ignore if any purchase in progress
+                        if (IapService.instance.isPurchaseInProgress) return;
                         if (_forestUnlocked) {
                           if (_userThemeValue != kThemeForest) {
                             setState(() { _userThemeValue = kThemeForest; });
@@ -279,36 +296,44 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                             setModalState(() {});
                           }
                         } else {
+                          setModalState(() {}); // Show purchasing state
                           await IapService.instance.buy(kThemeForest);
                           setModalState(() {}); // Refresh after purchase attempt
                         }
                       },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('forest'),
-                                  Text(
-                                    _userThemeValue == kThemeForest ? 'applied' : 'available',
-                                    style: TextStyle(fontSize: 15, color: Color(0xFF4A4A48)),
-                                  ),
-                                ],
+                      child: Opacity(
+                        opacity: IapService.instance.purchaseInProgressProductId == kThemeForest ? 0.5 : 1.0,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('forest'),
+                                    Text(
+                                      IapService.instance.purchaseInProgressProductId == kThemeForest
+                                          ? '...'
+                                          : (_userThemeValue == kThemeForest ? 'applied' : 'available'),
+                                      style: TextStyle(fontSize: 15, color: Color(0xFF4A4A48)),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            if (!_forestUnlocked || _userThemeValue != kThemeForest)
-                              Icon(Icons.chevron_right, size: 16, color: Color(0xFF222222).withOpacity(0.62)),
-                          ],
+                              if (!_forestUnlocked || _userThemeValue != kThemeForest)
+                                Icon(Icons.chevron_right, size: 16, color: Color(0xFF222222).withOpacity(0.62)),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                     GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       onTap: () async {
+                        // Single-flight: ignore if any purchase in progress
+                        if (IapService.instance.isPurchaseInProgress) return;
                         if (_autumnUnlocked) {
                           if (_userThemeValue != kThemeAutumn) {
                             setState(() { _userThemeValue = kThemeAutumn; });
@@ -316,30 +341,36 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                             setModalState(() {});
                           }
                         } else {
+                          setModalState(() {}); // Show purchasing state
                           await IapService.instance.buy(kThemeAutumn);
                           setModalState(() {}); // Refresh after purchase attempt
                         }
                       },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('autumn'),
-                                  Text(
-                                    _userThemeValue == kThemeAutumn ? 'applied' : 'available',
-                                    style: TextStyle(fontSize: 15, color: Color(0xFF4A4A48)),
-                                  ),
-                                ],
+                      child: Opacity(
+                        opacity: IapService.instance.purchaseInProgressProductId == kThemeAutumn ? 0.5 : 1.0,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('autumn'),
+                                    Text(
+                                      IapService.instance.purchaseInProgressProductId == kThemeAutumn
+                                          ? '...'
+                                          : (_userThemeValue == kThemeAutumn ? 'applied' : 'available'),
+                                      style: TextStyle(fontSize: 15, color: Color(0xFF4A4A48)),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            if (!_autumnUnlocked || _userThemeValue != kThemeAutumn)
-                              Icon(Icons.chevron_right, size: 16, color: Color(0xFF222222).withOpacity(0.62)),
-                          ],
+                              if (!_autumnUnlocked || _userThemeValue != kThemeAutumn)
+                                Icon(Icons.chevron_right, size: 16, color: Color(0xFF222222).withOpacity(0.62)),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -405,36 +436,43 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                     GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       onTap: () async {
+                        // Single-flight: ignore if any purchase in progress
+                        if (IapService.instance.isPurchaseInProgress) return;
                         if (_isSupporter) return;
+                        setModalState(() {}); // Show purchasing state
                         await IapService.instance.buy(kSupportProject);
+                        setModalState(() {}); // Refresh after purchase attempt
                       },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                _isSupporter ? 'much appreciated' : 'show appreciation',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Color(0xFF4A4A48),
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 0.05,
+                      child: Opacity(
+                        opacity: IapService.instance.purchaseInProgressProductId == kSupportProject ? 0.5 : 1.0,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  IapService.instance.purchaseInProgressProductId == kSupportProject
+                                      ? '...'
+                                      : (_isSupporter ? 'much appreciated' : 'show appreciation'),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Color(0xFF4A4A48),
+                                    fontWeight: FontWeight.w500,
+                                    letterSpacing: 0.05,
+                                  ),
                                 ),
                               ),
-                            ),
-                            if (!_isSupporter) Icon(Icons.chevron_right, size: 16, color: Color(0xFF222222).withOpacity(0.62)),
-                          ],
+                              if (!_isSupporter) Icon(Icons.chevron_right, size: 16, color: Color(0xFF222222).withOpacity(0.62)),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-
-
-
-                  ],
+                    ],
+                  ),
                 );
-              }
+              },
             ),
           ],
         ),
@@ -508,6 +546,8 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
   int? reflectionVariantId; // Step 4C addendum: which reflection variant (0..2)
   String? dailyReflection; // Step 4: Optional reflection text
   int? holdTheDayVariantId; // Step 4D: chosen once when day becomes complete (0..9)
+  String _lastNonEmptyReflectionText = ''; // Hold last valid text to prevent blink
+  bool _wasDayComplete = false; // Track prior state for reflection AnimatedSwitcher duration
   // Minimal audio controls (ambient + tap SFX). No theme switching.
   bool _holdSfxPlayed = false;
 
@@ -541,6 +581,8 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
   // Delayed settling label: shows "this moment is settling" after brief delay
   Timer? _settlingLabelTimer;
   bool _showSettlingLabel = false;
+  // Synchronous guard: set immediately on final roll to prevent intermediate label flash
+  bool _isFinalRollTriggered = false;
 
   // Step 4E: Tideline (ambient settling visual)
   late final AnimationController tidelineController;
@@ -935,6 +977,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
       meaningArchetype = null;
       reflectionVariantId = null;
       dailyReflection = null;
+      _lastNonEmptyReflectionText = ''; // Clear cached text on day reset
       holdTheDayVariantId = null;
       _holdSfxPlayed = false;
       _readingWasRevealedAtSamplingStart = false;
@@ -1194,6 +1237,9 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
   bool _showReflection = false; // Reflects canonical display pause
 
   void _onLuckIndexRevealed() {
+    // Don't re-hide if reflection is already visible (prevents blink on subsequent rolls)
+    if (_showReflection && dailyReflection != null) return;
+
     setState(() => _showReflection = false);
     Future.delayed(const Duration(milliseconds: 700), () {
       // Only display if number is still visible and settling is over (double check)
@@ -1294,6 +1340,8 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     if (isSampling || observationCredits < nextObservationCost) return;
 
     final bool isPrimaryReading = !primaryReadingTakenToday;
+    // Capture if this is the final interaction BEFORE state changes
+    final bool isFinalRoll = !isPrimaryReading && observationInteractionsToday == 1;
 
     // Remove pre-sampling haze hold logic (variance phasing now via build).
 
@@ -1301,6 +1349,8 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     setState(() {
       isSampling = true;
       _readingWasRevealedAtSamplingStart = primaryReadingRevealed;
+      // Set synchronous guard for final roll to prevent label flash
+      if (isFinalRoll) _isFinalRollTriggered = true;
       // Keep secondary UI from “arriving” while the atmosphere system is active.
       _ctaReady = false;
       _ctaRevealTimer?.cancel();
@@ -1366,6 +1416,13 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     setState(() {
       isSampling = false;
       _showSettlingLabel = false;
+      _isFinalRollTriggered = false;
+      // Fallback: ensure reflection is visible if it exists (prevents rapid-tap skip)
+      if (dailyReflection != null && !_showReflection) {
+        _showReflection = true;
+      }
+      // Update previous state for end-of-day transition detection
+      _wasDayComplete = isDayComplete;
     });
 
     // Update spatial easing based on current day settling (passive audio modifier)
@@ -1402,14 +1459,16 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
 
     // Guard: during settling label delay, hold the previous label (no intermediate flash)
     final bool settlingPending = isSampling && !_showSettlingLabel;
-    final primaryLabel = _showSettlingLabel
+    // One remaining interaction: show "settle once more" just before final settling
+    final bool oneInteractionRemaining = observationInteractionsToday == 1 && canAffordObservation;
+    final primaryLabel = _showSettlingLabel || _isFinalRollTriggered
         ? 'this moment is settling'
         : settlingPending
         ? (_readingWasRevealedAtSamplingStart ? 'settle a little longer' : getDailyAnchorCtaText(DateTime.now()))
         : !primaryReadingTakenToday
         ? getDailyAnchorCtaText(DateTime.now())
         : canAffordObservation
-        ? 'settle a little longer'
+        ? (oneInteractionRemaining ? 'settle once more' : 'settle a little longer')
         : 'this is enough for today';
     final bool isEnoughLabel = primaryReadingTakenToday && !canAffordObservation && !isSampling;
     final String holdTheDayTextForToday =
@@ -1630,13 +1689,21 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 24),
                           child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200), // ← use 250ms if you want; 200ms is canonical
-                            switchInCurve: Curves.easeOut,
-                            switchOutCurve: Curves.easeOut,
+                            duration: _wasDayComplete != isDayComplete && isDayComplete
+                                ? const Duration(milliseconds: 450)
+                                : const Duration(milliseconds: 320),
+                            switchInCurve: Curves.easeInOut,
+                            switchOutCurve: Curves.easeInOut,
 
-                            // ☢️ NUCLEAR OPTION: render only the current child
-                            layoutBuilder: (currentChild, _) {
-                              return currentChild ?? const SizedBox.shrink();
+                            // Stack-based crossfade for smooth overlap
+                            layoutBuilder: (currentChild, previousChildren) {
+                              return Stack(
+                                alignment: Alignment.center,
+                                children: <Widget>[
+                                  ...previousChildren,
+                                  if (currentChild != null) currentChild,
+                                ],
+                              );
                             },
 
                             transitionBuilder: (child, anim) {
@@ -1646,30 +1713,41 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                               );
                             },
 
-                            child: (primaryReadingRevealed &&
-                                (dailyReflection != null || isDayComplete))
-                                ? Text(
-                              // Gate end-of-day text: only show AFTER settling completes (isSampling=false)
-                              (isDayComplete && !isSampling)
-                                  ? holdTheDayTextForToday
-                                  : dailyReflection!,
-                              key: ValueKey<String>(
-                                (isDayComplete && !isSampling)
-                                    ? 'hold_${holdTheDayVariantId ?? 0}'
-                                    : 'reflection',
-                              ),
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                color: Color(0xFF474442),
-                                height: 1.6,
-                                letterSpacing: 0.4,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            )
-                                : const SizedBox.shrink(
-                              key: ValueKey<String>('secondary_empty'),
-                            ),
+                            child: () {
+                              // Compute the display text and key it by content
+                              String computedText = '';
+                              if (primaryReadingRevealed && (dailyReflection != null || isDayComplete)) {
+                                computedText = (isDayComplete && !isSampling)
+                                    ? holdTheDayTextForToday
+                                    : dailyReflection ?? '';
+                              }
+                              // Hold last non-empty value to prevent blink during state transitions
+                              final String displayText;
+                              if (computedText.isNotEmpty) {
+                                _lastNonEmptyReflectionText = computedText;
+                                displayText = computedText;
+                              } else if (_lastNonEmptyReflectionText.isNotEmpty && _showReflection) {
+                                // Use cached value only if reflection should be visible
+                                displayText = _lastNonEmptyReflectionText;
+                              } else {
+                                displayText = '';
+                              }
+                              if (displayText.isEmpty) {
+                                return const SizedBox.shrink(key: ValueKey<String>('secondary_empty'));
+                              }
+                              return Text(
+                                displayText,
+                                key: ValueKey<String>(displayText), // Key by actual text for smooth transitions
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  color: Color(0xFF474442),
+                                  height: 1.6,
+                                  letterSpacing: 0.4,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              );
+                            }(),
                           ),
 
                         ),
@@ -1684,88 +1762,106 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                       curve: Curves.easeOut,
                       // Only dim once sampling has resolved, so the change lands with the number update.
                       opacity: (!isSampling && isEnoughLabel) ? 0.50 : 1.0,
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          maxWidth: 280, // Constrain width (not full screen)
-                        ),
-                        child: GestureDetector(
-                          // Deliberate decline (no extra copy): press-and-hold only (slightly longer than default).
-                          onTapDown: (!isSampling &&
-                                  !canAffordObservation &&
-                                  showCta &&
-                                  !adsExhausted &&
-                                  !adsDeclinedToday)
-                              ? (_) {
-                                  _declineHoldTimer?.cancel();
-                                  _declineHoldTimer = Timer(const Duration(milliseconds: 800), () {
-                                    if (!mounted) return;
-                                    _declineAdsAndCompleteDay();
-                                  });
-                                }
-                              : null,
-                          onTapUp: (_) {
-                            _declineHoldTimer?.cancel();
-                          },
-                          onTapCancel: () {
-                            _declineHoldTimer?.cancel();
-                          },
-                          child: ElevatedButton(
-                            onPressed: isSampling || !canAffordObservation
-                                ? null
-                                : () {
-                                    if (_soundMasterEnabled && _sfxEnabled) {
-                                      unawaited(SoundManager.instance.playTap());
+                      child: Builder(
+                        builder: (context) {
+                          final screenWidth = MediaQuery.of(context).size.width;
+                          final pillWidth = screenWidth * 0.74;
+                          final width = pillWidth.clamp(260.0, 320.0);
+                          return Container(
+                            // Responsive width: prevents pill from resizing when label changes
+                            width: width,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x1A000000), // ~10% black, subtle
+                                  blurRadius: 2,
+                                  offset: Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                            child: GestureDetector(
+                              // Deliberate decline (no extra copy): press-and-hold only (slightly longer than default).
+                              onTapDown: (!isSampling &&
+                                      !canAffordObservation &&
+                                      showCta &&
+                                      !adsExhausted &&
+                                      !adsDeclinedToday)
+                                  ? (_) {
+                                      _declineHoldTimer?.cancel();
+                                      _declineHoldTimer = Timer(const Duration(milliseconds: 800), () {
+                                        if (!mounted) return;
+                                        _declineAdsAndCompleteDay();
+                                      });
                                     }
-                                    sampleAtmosphere();
+                                  : null,
+                              onTapUp: (_) {
+                                _declineHoldTimer?.cancel();
+                              },
+                              onTapCancel: () {
+                                _declineHoldTimer?.cancel();
+                              },
+                              child: ElevatedButton(
+                                onPressed: isSampling || !canAffordObservation
+                                    ? null
+                                    : () {
+                                        if (_soundMasterEnabled && _sfxEnabled) {
+                                          unawaited(SoundManager.instance.playTap());
+                                        }
+                                        sampleAtmosphere();
+                                      },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: palette['primaryButton'] ?? Color(0xFFA3D5D3),
+                                  foregroundColor: palette['primaryButtonText'] ?? Color(0xFF4A4A48),
+                                  disabledBackgroundColor: palette['primaryButton'] ?? Color(0xFFA3D5D3), // muted, no "pop"
+                                  disabledForegroundColor: const Color(0xCC4A4A48), // slightly muted text only
+                                  fixedSize: Size(width, 48), // Responsive fixed size
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                  elevation: 0, // Shadow moved to parent shell to prevent crossfade artifacts
+                                  shadowColor: Colors.transparent,
+                                  textStyle: const TextStyle(
+                                    fontSize: 16, // Increased from 15 for button text clarity
+                                    fontWeight: FontWeight.w400,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 320), // Unified calm dissolve
+                                  switchInCurve: Curves.easeInOut,
+                                  switchOutCurve: Curves.easeInOut,
+
+                                  // ✅ THIS IS THE FIX
+                                  layoutBuilder: (currentChild, previousChildren) {
+                                    return Stack(
+                                      alignment: Alignment.center,
+                                      children: <Widget>[
+                                        ...previousChildren,
+                                        if (currentChild != null) currentChild,
+                                      ],
+                                    );
                                   },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: palette['primaryButton'] ?? Color(0xFFA3D5D3),
-                              foregroundColor: palette['primaryButtonText'] ?? Color(0xFF4A4A48),
-                              disabledBackgroundColor: palette['primaryButton'] ?? Color(0xFFA3D5D3), // muted, no "pop"
-                              disabledForegroundColor: const Color(0xCC4A4A48), // slightly muted text only
-                              minimumSize: const Size(220, 48),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(24),
-                              ),
-                              elevation: 1,
-                              textStyle: const TextStyle(
-                                fontSize: 16, // Increased from 15 for button text clarity
-                                fontWeight: FontWeight.w400,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              switchInCurve: Curves.easeOut,
-                              switchOutCurve: Curves.easeOut,
 
-                              // ✅ THIS IS THE FIX
-                              layoutBuilder: (currentChild, previousChildren) {
-                                return Stack(
-                                  alignment: Alignment.center,
-                                  children: <Widget>[
-                                    ...previousChildren,
-                                    if (currentChild != null) currentChild,
-                                  ],
-                                );
-                              },
+                                  transitionBuilder: (child, animation) {
+                                    return FadeTransition(
+                                      opacity: animation,
+                                      child: child,
+                                    );
+                                  },
 
-                              transitionBuilder: (child, animation) {
-                                return FadeTransition(
-                                  opacity: animation,
-                                  child: child,
-                                );
-                              },
+                                  child: Text(
+                                    primaryLabel,
+                                    key: ValueKey<String>(primaryLabel),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
 
-                              child: Text(
-                                primaryLabel,
-                                key: ValueKey<String>(primaryLabel),
-                                textAlign: TextAlign.center,
                               ),
                             ),
-
-                          ),
-                        ),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -1796,12 +1892,17 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                               decoration: BoxDecoration(
                                 color: () {
                                   final cta = (palette['ctaButton'] ?? Color(0xFFA3D5D3)).withOpacity(0.92);
-                                  if ((kDebugMode ? _devThemeValue : _userThemeValue) == kThemeForest) {
+                                  final currentTheme = kDebugMode ? _devThemeValue : _userThemeValue;
+                                  if (currentTheme == kThemeForest) {
                                     final base = Color(0xFFD2DAD4);
-                                    return Color.alphaBlend(base.withOpacity(0.45), cta);
-                                  } else if ((kDebugMode ? _devThemeValue : _userThemeValue) == kThemeAutumn) {
+                                    final blended = Color.alphaBlend(base.withOpacity(0.45), cta);
+                                    // Soften further when day is complete (settled/disabled)
+                                    return isDayComplete ? blended.withOpacity(0.12) : blended;
+                                  } else if (currentTheme == kThemeAutumn) {
                                     final base = Color(0xFFDED7CF);
-                                    return Color.alphaBlend(base.withOpacity(0.45), cta);
+                                    final blended = Color.alphaBlend(base.withOpacity(0.45), cta);
+                                    // Soften further when day is complete (settled/disabled)
+                                    return isDayComplete ? blended.withOpacity(0.12) : blended;
                                   } else {
                                     return cta;
                                   }
@@ -1812,7 +1913,13 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                                 'pause briefly',
                                 style: TextStyle(
                                   fontSize: 15,
-                                  color: palette['primaryButtonText'] ?? Color(0xFF4A4A48),
+                                  color: () {
+                                    final textColor = palette['primaryButtonText'] ?? Color(0xFF4A4A48);
+                                    final currentTheme = kDebugMode ? _devThemeValue : _userThemeValue;
+                                    final isForestOrAutumn = currentTheme == kThemeForest || currentTheme == kThemeAutumn;
+                                    // Soften text when day is complete for Forest/Autumn
+                                    return (isDayComplete && isForestOrAutumn) ? textColor.withOpacity(0.40) : textColor;
+                                  }(),
                                   letterSpacing: 0.3,
                                   fontWeight: FontWeight.w400,
                                 ),
