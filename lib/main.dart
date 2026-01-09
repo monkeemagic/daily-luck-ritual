@@ -181,7 +181,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                         },
                       ),
                       SwitchListTile(
-                        value: _ambienceEnabled,
+                        value: _soundMasterEnabled ? _ambienceEnabled : false,
                         title: const Text('ambient sound', style: TextStyle(fontSize: 16)),
                         onChanged: _soundMasterEnabled
                             ? (val) {
@@ -198,7 +198,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                             : null,
                       ),
                       SwitchListTile(
-                        value: _sfxEnabled,
+                        value: _soundMasterEnabled ? _sfxEnabled : false,
                         title: const Text('button tap sound', style: TextStyle(fontSize: 16)),
                         onChanged: _soundMasterEnabled
                             ? (val) {
@@ -284,94 +284,60 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                         setModalState(() {});
                       },
                     ),
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () async {
-                        // Single-flight: ignore if any purchase in progress
-                        if (IapService.instance.isPurchaseInProgress) return;
-                        if (_forestUnlocked) {
-                          if (_userThemeValue != kThemeForest) {
-                            setState(() { _userThemeValue = kThemeForest; });
-                            await _persistState();
-                            setModalState(() {});
-                          }
-                        } else {
-                          setModalState(() {}); // Show purchasing state
-                          await IapService.instance.buy(kThemeForest);
-                          setModalState(() {}); // Refresh after purchase attempt
-                        }
-                      },
-                      child: Opacity(
-                        opacity: IapService.instance.purchaseInProgressProductId == kThemeForest ? 0.5 : 1.0,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('forest'),
-                                    Text(
-                                      IapService.instance.purchaseInProgressProductId == kThemeForest
-                                          ? '...'
-                                          : (_userThemeValue == kThemeForest ? 'applied' : 'available'),
-                                      style: TextStyle(fontSize: 15, color: Color(0xFF4A4A48)),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (!_forestUnlocked || _userThemeValue != kThemeForest)
-                                Icon(Icons.chevron_right, size: 16, color: Color(0xFF222222).withOpacity(0.62)),
-                            ],
-                          ),
+                    Opacity(
+                      opacity: IapService.instance.purchaseInProgressProductId == kThemeForest ? 0.5 : 1.0,
+                      child: ListTile(
+                        title: Text('forest'),
+                        subtitle: Text(
+                          IapService.instance.purchaseInProgressProductId == kThemeForest
+                              ? '...'
+                              : (_userThemeValue == kThemeForest ? 'applied' : 'available'),
+                          style: TextStyle(fontSize: 15, color: Color(0xFF4A4A48)),
                         ),
+                        trailing: (!_forestUnlocked || _userThemeValue != kThemeForest)
+                            ? Icon(Icons.chevron_right, size: 16, color: Color(0xFF222222).withOpacity(0.62))
+                            : null,
+                        onTap: IapService.instance.isPurchaseInProgress ? null : () async {
+                          if (_forestUnlocked) {
+                            if (_userThemeValue != kThemeForest) {
+                              setState(() { _userThemeValue = kThemeForest; });
+                              await _persistState();
+                              setModalState(() {});
+                            }
+                          } else {
+                            setModalState(() {}); // Show purchasing state
+                            await IapService.instance.buy(kThemeForest);
+                            setModalState(() {}); // Refresh after purchase attempt
+                          }
+                        },
                       ),
                     ),
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () async {
-                        // Single-flight: ignore if any purchase in progress
-                        if (IapService.instance.isPurchaseInProgress) return;
-                        if (_autumnUnlocked) {
-                          if (_userThemeValue != kThemeAutumn) {
-                            setState(() { _userThemeValue = kThemeAutumn; });
-                            await _persistState();
-                            setModalState(() {});
-                          }
-                        } else {
-                          setModalState(() {}); // Show purchasing state
-                          await IapService.instance.buy(kThemeAutumn);
-                          setModalState(() {}); // Refresh after purchase attempt
-                        }
-                      },
-                      child: Opacity(
-                        opacity: IapService.instance.purchaseInProgressProductId == kThemeAutumn ? 0.5 : 1.0,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('autumn'),
-                                    Text(
-                                      IapService.instance.purchaseInProgressProductId == kThemeAutumn
-                                          ? '...'
-                                          : (_userThemeValue == kThemeAutumn ? 'applied' : 'available'),
-                                      style: TextStyle(fontSize: 15, color: Color(0xFF4A4A48)),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (!_autumnUnlocked || _userThemeValue != kThemeAutumn)
-                                Icon(Icons.chevron_right, size: 16, color: Color(0xFF222222).withOpacity(0.62)),
-                            ],
-                          ),
+                    Opacity(
+                      opacity: IapService.instance.purchaseInProgressProductId == kThemeAutumn ? 0.5 : 1.0,
+                      child: ListTile(
+                        title: Text('autumn'),
+                        subtitle: Text(
+                          IapService.instance.purchaseInProgressProductId == kThemeAutumn
+                              ? '...'
+                              : (_userThemeValue == kThemeAutumn ? 'applied' : 'available'),
+                          style: TextStyle(fontSize: 15, color: Color(0xFF4A4A48)),
                         ),
+                        trailing: (!_autumnUnlocked || _userThemeValue != kThemeAutumn)
+                            ? Icon(Icons.chevron_right, size: 16, color: Color(0xFF222222).withOpacity(0.62))
+                            : null,
+                        onTap: IapService.instance.isPurchaseInProgress ? null : () async {
+                          if (_autumnUnlocked) {
+                            if (_userThemeValue != kThemeAutumn) {
+                              setState(() { _userThemeValue = kThemeAutumn; });
+                              await _persistState();
+                              setModalState(() {});
+                            }
+                          } else {
+                            setModalState(() {}); // Show purchasing state
+                            await IapService.instance.buy(kThemeAutumn);
+                            setModalState(() {}); // Refresh after purchase attempt
+                          }
+                        },
                       ),
                     ),
                     const SizedBox(height: 22),
@@ -502,26 +468,6 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
       kThemeAutumn,
     ];
     return themes[_devThemeIndex % themes.length];
-  }
-
-  String get _devThemeLabel {
-    switch (_devThemeValue) {
-      case kThemeForest:
-        return 'Forest';
-      case kThemeAutumn:
-        return 'Autumn';
-      case kThemeOcean:
-      default:
-        return 'Ocean';
-    }
-  }
-
-  void _cycleDevTheme() {
-    if (!kDebugMode) return;
-    setState(() {
-      _devThemeIndex = (_devThemeIndex + 1) % 3;
-      // Nudge a repaint for any painters that rely on theme-derived colors.
-    });
   }
 
   // Canonical model:
@@ -726,7 +672,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     });
     tidelineGateController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 4200), // Much slower ramp (~3x longer)
+      duration: const Duration(milliseconds: 10000), // Same slow cadence as value updates
     );
     tidelineGate = CurvedAnimation(
       parent: tidelineGateController,
@@ -1450,6 +1396,14 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
     // - Variance is perceptible during sampling
     // - Calm emerges as variance decays
     final bool isReadingActive = isSampling;
+    final String activeTheme = kDebugMode ? _devThemeValue : _userThemeValue;
+    final bool isAutumnTheme = activeTheme == kThemeAutumn;
+
+    final double primaryActiveOpacity = 1.0;
+    final double primaryDisabledOpacity = 0.50;
+    final double secondaryActiveOpacity = ctaOpacity;
+    final double secondaryDisabledOpacity =
+        activeTheme == kThemeAutumn ? 0.53 : 0.43;
 
     if (canShowAd &&
         rewardedAd == null &&
@@ -1485,6 +1439,21 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
         builder: (context) {
           // 🔥 Remove anchor/day gating from tideline palette selection
           final Map<String, Color> palette = _themePalettes[(kDebugMode ? _devThemeValue : _userThemeValue)] ?? _themePalettes[kThemeOcean]!;
+          final Color secondaryFillColor = () {
+            final cta = (palette['ctaButton'] ?? Color(0xFFA3D5D3)).withOpacity(0.92);
+            final currentTheme = kDebugMode ? _devThemeValue : _userThemeValue;
+            if (currentTheme == kThemeForest) {
+              final base = Color(0xFFD2DAD4);
+              final blended = Color.alphaBlend(base.withOpacity(0.45), cta);
+              return blended;
+            } else if (currentTheme == kThemeAutumn) {
+              final base = Color(0xFFDED7CF);
+              final blended = Color.alphaBlend(base.withOpacity(0.45), cta);
+              return blended;
+            } else {
+              return cta;
+            }
+          }();
 
           return Stack(
             children: [
@@ -1581,7 +1550,8 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                         // when observation/settling state changes.
                         return TweenAnimationBuilder<double>(
                       // Slower, softer convergence so “new settled value” arrives gently.
-                      duration: const Duration(milliseconds: 3000),
+                      // When day is settled, use much longer duration for barely perceptible changes.
+                      duration: const Duration(milliseconds: 8000),
                       curve: Curves.easeInOut,
                       // IMPORTANT: do not reset `begin` to 0 on rebuild; that creates a visible “jump”
                       // when settling progresses. With `begin` omitted, Flutter animates from the
@@ -1761,7 +1731,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                       duration: const Duration(milliseconds: 450),
                       curve: Curves.easeOut,
                       // Only dim once sampling has resolved, so the change lands with the number update.
-                      opacity: (!isSampling && isEnoughLabel) ? 0.50 : 1.0,
+                      opacity: (!isSampling && isEnoughLabel) ? primaryDisabledOpacity : primaryActiveOpacity,
                       child: Builder(
                         builder: (context) {
                           final screenWidth = MediaQuery.of(context).size.width;
@@ -1812,9 +1782,9 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                                         sampleAtmosphere();
                                       },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: palette['primaryButton'] ?? Color(0xFFA3D5D3),
+                                  backgroundColor: isAutumnTheme ? secondaryFillColor : (palette['primaryButton'] ?? Color(0xFFA3D5D3)),
                                   foregroundColor: palette['primaryButtonText'] ?? Color(0xFF4A4A48),
-                                  disabledBackgroundColor: palette['primaryButton'] ?? Color(0xFFA3D5D3), // muted, no "pop"
+                                  disabledBackgroundColor: isAutumnTheme ? secondaryFillColor : (palette['primaryButton'] ?? Color(0xFFA3D5D3)), // muted, no "pop"
                                   disabledForegroundColor: const Color(0xCC4A4A48), // slightly muted text only
                                   fixedSize: Size(width, 48), // Responsive fixed size
                                   shape: RoundedRectangleBorder(
@@ -1871,7 +1841,9 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                         duration: const Duration(milliseconds: 260),
                         curve: Curves.easeOut,
                         opacity: showCta
-                            ? (isDayComplete ? 0.43 : ctaOpacity)
+                            ? (isDayComplete 
+                                ? secondaryDisabledOpacity
+                                : secondaryActiveOpacity)
                             : 0.0,
                         child: ExcludeSemantics(
                           excluding: !showCta,
@@ -1890,23 +1862,7 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                                 vertical: 5,
                               ),
                               decoration: BoxDecoration(
-                                color: () {
-                                  final cta = (palette['ctaButton'] ?? Color(0xFFA3D5D3)).withOpacity(0.92);
-                                  final currentTheme = kDebugMode ? _devThemeValue : _userThemeValue;
-                                  if (currentTheme == kThemeForest) {
-                                    final base = Color(0xFFD2DAD4);
-                                    final blended = Color.alphaBlend(base.withOpacity(0.45), cta);
-                                    // Soften further when day is complete (settled/disabled)
-                                    return isDayComplete ? blended.withOpacity(0.12) : blended;
-                                  } else if (currentTheme == kThemeAutumn) {
-                                    final base = Color(0xFFDED7CF);
-                                    final blended = Color.alphaBlend(base.withOpacity(0.45), cta);
-                                    // Soften further when day is complete (settled/disabled)
-                                    return isDayComplete ? blended.withOpacity(0.12) : blended;
-                                  } else {
-                                    return cta;
-                                  }
-                                }(),
+                                color: secondaryFillColor,
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -1916,9 +1872,11 @@ class _AtmosphereScreenState extends State<AtmosphereScreen>
                                   color: () {
                                     final textColor = palette['primaryButtonText'] ?? Color(0xFF4A4A48);
                                     final currentTheme = kDebugMode ? _devThemeValue : _userThemeValue;
-                                    final isForestOrAutumn = currentTheme == kThemeForest || currentTheme == kThemeAutumn;
-                                    // Soften text when day is complete for Forest/Autumn
-                                    return (isDayComplete && isForestOrAutumn) ? textColor.withOpacity(0.40) : textColor;
+                                    // Forest/Autumn: keep text at base opacity even when day is complete (avoid extra wash)
+                                    if (isDayComplete && currentTheme == kThemeOcean) {
+                                      return textColor;
+                                    }
+                                    return textColor;
                                   }(),
                                   letterSpacing: 0.3,
                                   fontWeight: FontWeight.w400,

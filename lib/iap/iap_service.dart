@@ -15,6 +15,7 @@ class IapService {
   // Single-flight purchase guard: only one purchase flow at a time
   bool _purchaseInProgress = false;
   String? _purchaseInProgressProductId;
+  Completer<void>? _purchaseCompleter;
   
   bool get isPurchaseInProgress => _purchaseInProgress;
   String? get purchaseInProgressProductId => _purchaseInProgressProductId;
@@ -27,7 +28,13 @@ class IapService {
     _subscription = purchaseStream.listen((purchases) {
       _handlePurchaseUpdates(purchases);
     }, onError: (error) {
-      // Handle error
+      // Clear in-progress state on errors so UI re-enables after cancel/error
+      _purchaseInProgress = false;
+      _purchaseInProgressProductId = null;
+      if (_purchaseCompleter != null && !_purchaseCompleter!.isCompleted) {
+        _purchaseCompleter!.complete();
+      }
+      _purchaseCompleter = null;
     });
 
     // Query for existing purchases to restore state
@@ -54,6 +61,8 @@ class IapService {
             purchase.status == PurchaseStatus.error) {
           _purchaseInProgress = false;
           _purchaseInProgressProductId = null;
+          _purchaseCompleter?.complete();
+          _purchaseCompleter = null;
         }
       }
 
@@ -74,6 +83,7 @@ class IapService {
     // Set flag synchronously BEFORE any async work
     _purchaseInProgress = true;
     _purchaseInProgressProductId = productId;
+    _purchaseCompleter = Completer<void>();
     
     try {
       final ProductDetailsResponse response =
@@ -83,6 +93,8 @@ class IapService {
         // Clear flag if product not found
         _purchaseInProgress = false;
         _purchaseInProgressProductId = null;
+        _purchaseCompleter?.complete();
+        _purchaseCompleter = null;
         return;
       }
 
@@ -96,12 +108,18 @@ class IapService {
       } else {
         _iap.buyNonConsumable(purchaseParam: purchaseParam);
       }
-      // Note: flag is cleared in _handlePurchaseUpdates when purchase completes/fails/cancels
+      // Wait for terminal state (purchase/cancel/error) before returning
+      await _purchaseCompleter?.future;
     } catch (e) {
-      // Clear flag on any exception
+      rethrow;
+    } finally {
+      // Always clear in-progress state so tiles re-enable on cancel/error
       _purchaseInProgress = false;
       _purchaseInProgressProductId = null;
-      rethrow;
+      if (_purchaseCompleter != null && !_purchaseCompleter!.isCompleted) {
+        _purchaseCompleter!.complete();
+      }
+      _purchaseCompleter = null;
     }
   }
 
