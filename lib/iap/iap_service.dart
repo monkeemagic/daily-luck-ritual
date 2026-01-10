@@ -53,17 +53,23 @@ class IapService {
         ownedProductIds.add(purchase.productID);
       }
 
-      // Clear in-flight flag on any terminal state for this product
-      if (_purchaseInProgressProductId == purchase.productID) {
-        if (purchase.status == PurchaseStatus.purchased ||
-            purchase.status == PurchaseStatus.restored ||
-            purchase.status == PurchaseStatus.canceled ||
-            purchase.status == PurchaseStatus.error) {
-          _purchaseInProgress = false;
-          _purchaseInProgressProductId = null;
-          _purchaseCompleter?.complete();
-          _purchaseCompleter = null;
-        }
+      // Clear in-flight flag on any terminal state
+      // Note: For canceled/error, iOS may send empty or mismatched productID, so we clear
+      // if ANY purchase is in progress (single-flight guard ensures only one at a time)
+      if (_purchaseInProgressProductId == purchase.productID &&
+          (purchase.status == PurchaseStatus.purchased ||
+           purchase.status == PurchaseStatus.restored)) {
+        _purchaseInProgress = false;
+        _purchaseInProgressProductId = null;
+        _purchaseCompleter?.complete();
+        _purchaseCompleter = null;
+      } else if (_purchaseInProgress &&
+                 (purchase.status == PurchaseStatus.canceled ||
+                  purchase.status == PurchaseStatus.error)) {
+        _purchaseInProgress = false;
+        _purchaseInProgressProductId = null;
+        _purchaseCompleter?.complete();
+        _purchaseCompleter = null;
       }
 
       if (purchase.pendingCompletePurchase) {
